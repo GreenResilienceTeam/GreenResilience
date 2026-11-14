@@ -60,4 +60,30 @@ for crop in get_crops().index:
             bad.append(r["explanation"])
 check("explanations follow the template", not bad, f"({len(bad)} bad)" + (f" e.g. {bad[0]}" if bad else ""))
 
+# --- model v2: GDD, water balance, pH, years ---
+from scoring import YEARS, ph_factor
+
+t0 = evaluate("tomato", REF_ZONE, "2025-04-01")
+t4 = evaluate("tomato", REF_ZONE, "2025-04-01", delta_T=4)
+check("GDD: +4 C ripens tomato faster", t4["cycle_days_used"] < t0["cycle_days_used"],
+      f"({t0['cycle_days_used']} -> {t4['cycle_days_used']} days)")
+# warming shortens the season (GDD), so compare water use PER DAY, not per season
+per_day = lambda r: r["crop_water_mm"] / r["cycle_days_used"]
+check("Field Shift: +4 C raises tomato daily water use (ET0)", per_day(t4) > per_day(t0),
+      f"({per_day(t0):.2f} -> {per_day(t4):.2f} mm/day; season {t0['crop_water_mm']:.0f} -> {t4['crop_water_mm']:.0f} mm)")
+winter = evaluate("radish", REF_ZONE, "2025-12-03")
+summer = evaluate("radish", REF_ZONE, "2025-07-02")
+check("water: winter radish needs less irrigation than summer radish", winter["irrigation_mm"] < summer["irrigation_mm"],
+      f"(winter {winter['irrigation_mm']:.0f} mm, summer {summer['irrigation_mm']:.0f} mm)")
+dry = evaluate("tomato", REF_ZONE, "2025-04-01", rain_factor=0.6)
+check("Field Shift: less rain means more irrigation", dry["irrigation_mm"] >= t0["irrigation_mm"],
+      f"({t0['irrigation_mm']:.0f} -> {dry['irrigation_mm']:.0f} mm)")
+p = get_crops().loc["tomato"]
+check("pH factor: 1 inside optimum, 0.5 at tolerance limit, floor 0.3",
+      ph_factor(7.0, p) == 1.0 and abs(ph_factor(p["ph_tol_max"], p) - 0.5) < 1e-9 and ph_factor(11, p) == 0.3)
+blue = best_planting("blueberry", "Town")
+check("blueberry limited by calcareous soil pH", blue["ph_score"] == 0.3 and "soil pH" in blue["explanation"],
+      f"(pH factor {blue['ph_score']}, {blue['match']:.2f})")
+check("every SiAR year is scored", sorted(t0["yearly_match"]) == YEARS, f"({sorted(t0['yearly_match'])})")
+
 print(f"\n{'ALL TESTS PASSED' if failures == 0 else f'{failures} TEST(S) FAILED'}")

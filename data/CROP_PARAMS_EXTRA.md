@@ -10,7 +10,7 @@ The biologists' table itself is unchanged. Each row has a `source` and a `confid
 | `kc_ini`, `kc_mid`, `kc_end` | FAO-56 crop coefficients | crop water need = Kc × ET₀ (SiAR) |
 | `stage_ini` … `stage_late` | share of the cycle in each growth stage (sums to 1) | when to use which Kc |
 | `root_depth_m`, `p_depletion` | max rooting depth; share of available soil water used before stress | soil water storage (with field capacity per zone) |
-| `ph_opt_min/max`, `ph_tol_min/max` | optimal and tolerated soil pH | pH factor (zone soils are pH ≈ 8, SoilGrids) |
+| `ph_opt_min/max`, `ph_tol_min/max` | optimal and tolerated soil pH (practical ranges for calcareous Mediterranean soils with fertigation: tomato, melon and citrus are grown here at pH ≈ 8) | soft pH factor: 1 inside the optimum, falls to 0.5 at the tolerance limit, never below 0.3 |
 
 **Please check first (lowest confidence):**
 - GDD totals for melon (1100) and radish (350, base 5 °C): estimates.

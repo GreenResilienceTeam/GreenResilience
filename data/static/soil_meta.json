@@ -71,7 +71,8 @@
   "silt_pct": "% (mass)",
   "ph_h2o": "pH in water",
   "soc_g_per_kg": "g/kg soil organic carbon",
-  "field_capacity_m3m3": "m3/m3 (from soil_moisture_conversion.csv)"
+  "field_capacity_m3m3": "m3/m3 (from soil_moisture_conversion.csv)",
+  "wilting_point_m3m3": "m3/m3 (from soil_moisture_conversion.csv)"
  },
  "texture": "USDA texture triangle",
  "missing_values": 0

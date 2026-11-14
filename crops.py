@@ -156,6 +156,11 @@ def load_crops():
         })
 
     crops = pd.DataFrame(rows).set_index("crop", drop=False)
+    # Extra parameters the biologists' table does not have (GDD, Kc, roots, pH), with sources:
+    # data/crop_params_extra.csv (see data/CROP_PARAMS_EXTRA.md)
+    extra = pd.read_csv(DATA_DIR / "crop_params_extra.csv").set_index("crop")
+    extra = extra.drop(columns=["source", "confidence"])
+    crops = crops.join(extra)
     for crop, changes in MANUAL_OVERRIDES.items():  # your manual edits win
         for field, value in changes.items():
             crops.at[crop, field] = value

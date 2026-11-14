@@ -32,7 +32,8 @@ ZONE_POINTS = {
 PROPS = {"clay": ("clay_pct", 10), "sand": ("sand_pct", 10), "silt": ("silt_pct", 10),
          "phh2o": ("ph_h2o", 10), "soc": ("soc_g_per_kg", 10)}
 UNITS = {"clay_pct": "% (mass)", "sand_pct": "% (mass)", "silt_pct": "% (mass)", "ph_h2o": "pH in water",
-         "soc_g_per_kg": "g/kg soil organic carbon", "field_capacity_m3m3": "m3/m3 (from soil_moisture_conversion.csv)"}
+         "soc_g_per_kg": "g/kg soil organic carbon", "field_capacity_m3m3": "m3/m3 (from soil_moisture_conversion.csv)",
+         "wilting_point_m3m3": "m3/m3 (from soil_moisture_conversion.csv)"}
 
 
 def query(lat, lon):
@@ -74,7 +75,8 @@ TEXTURE_FALLBACK = {"silt": "silt loam", "sandy clay loam": "clay loam", "silty 
                     "sandy clay": "clay", "silty clay": "clay"}
 
 
-def field_capacity(texture):
+def soil_water(texture, column):
+    """Field capacity or wilting point (m3/m3) for a texture, from soil_moisture_conversion.csv."""
     if texture is None:
         return None
     fc = pd.read_csv(find_file("soil_moisture_conversion.csv"))
@@ -82,7 +84,7 @@ def field_capacity(texture):
     row = fc[fc["soil_texture"] == TEXTURE_FALLBACK.get(texture, texture)]
     if row.empty:
         return None
-    nums = [float(x) for x in str(row["field_capacity_m3m3"].iloc[0]).split("-")]
+    nums = [float(x) for x in str(row[column].iloc[0]).split("-")]
     return sum(nums) / len(nums)          # "0.25-0.32" -> midpoint
 
 
@@ -98,7 +100,8 @@ def main():
     pts = pd.DataFrame(points)
     zones = pts.groupby("zone", sort=False)[[c for c, _ in PROPS.values()]].mean().round(2).reset_index()
     zones["texture"] = [texture_class(r.sand_pct, r.silt_pct, r.clay_pct) for r in zones.itertuples()]
-    zones["field_capacity_m3m3"] = [field_capacity(t) for t in zones["texture"]]
+    zones["field_capacity_m3m3"] = [soil_water(t, "field_capacity_m3m3") for t in zones["texture"]]
+    zones["wilting_point_m3m3"] = [soil_water(t, "wilting_point_m3m3") for t in zones["texture"]]
     OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
     zones.to_csv(OUT_CSV, index=False)
     OUT_META.write_text(json.dumps({
