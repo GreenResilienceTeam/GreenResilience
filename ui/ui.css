@@ -96,6 +96,37 @@ button { font: inherit; border: 0; cursor: pointer; color: inherit; background: 
 .credits { margin-top: 10px; font: 400 10.5px/1.5 Inter, sans-serif; color: #77827a; }
 .credits a { color: inherit; }
 
+/* ---- data cards (water balance, years, heat, soil, sources) ---- */
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font: 500 11.5px Inter, sans-serif; color: var(--muted); }
+.legend b { color: var(--ink); font-weight: 700; }
+.mini { margin: 6px 0 0; font: 400 12px/1.5 Inter, sans-serif; color: var(--muted2); }
+.mini b { color: var(--ink); }
+.stack { display: flex; height: 16px; border-radius: 8px; overflow: hidden; background: var(--track); margin-top: 8px; }
+.stack span { display: block; height: 100%; }
+.stack span + span { border-left: 2px solid #faf9f3; }
+.years { display: flex; gap: 10px; align-items: flex-end; margin-top: 6px; flex-wrap: wrap; }
+.years .mini { flex-basis: 100%; }
+.yr { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 56px; font: 500 11px Inter, sans-serif; color: var(--muted); }
+.yr b { font: 700 13px Inter, sans-serif; color: var(--ink); }
+.yb { display: flex; align-items: flex-end; width: 30px; height: 54px; border-radius: 8px; background: var(--track); overflow: hidden; }
+.yb i { display: block; width: 100%; border-radius: 8px 8px 0 0; }
+.prog { height: 10px; border-radius: 5px; background: var(--track); overflow: hidden; margin-top: 8px; }
+.prog i { display: block; height: 100%; background: linear-gradient(90deg, var(--olive2), var(--amber)); border-radius: 5px; }
+.phbar { position: relative; height: 14px; margin-top: 10px; border-radius: 7px; background: linear-gradient(90deg, #e9c7a8, #e1e6d3 45%, #c9dbe6); }
+.phbar .tol, .phbar .opt { position: absolute; top: 0; bottom: 0; border-radius: 7px; }
+.phbar .tol { background: #cdd6b3; }
+.phbar .opt { background: var(--olive); }
+.phbar .mark { position: absolute; top: -4px; width: 4px; height: 22px; margin-left: -2px; border-radius: 2px; background: var(--ink); box-shadow: 0 0 0 2px #faf9f3; }
+.phscale { position: relative; height: 14px; font: 500 9.5px Inter, sans-serif; color: #77827a; }
+.phscale span { position: absolute; transform: translateX(-50%); top: 2px; }
+.ychips { display: flex; gap: 6px; margin: 6px 0 2px; }
+.ychip { padding: 4px 10px; border-radius: 10px; background: var(--chip); font: 600 11.5px Inter, sans-serif; color: var(--ink); }
+.ychip.on { background: var(--olive2); color: #1c2616; }
+.lvl.ghost { background: transparent; border: 1px solid rgba(43,58,51,.25); color: var(--muted2); font-weight: 600; }
+.sources { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.sources span { padding: 5px 9px; border-radius: 10px; background: #e3ebe9; font: 600 10.5px Inter, sans-serif; color: #14403f; }
+
 /* ---- laptops / projectors: narrower panel ---- */
 @media (max-width: 1180px) and (min-width: 861px) {
   #panel { width: 380px; }
