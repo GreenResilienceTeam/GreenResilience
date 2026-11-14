@@ -495,7 +495,7 @@
     document.body.classList.add("page-" + p);
     if (p === "home") renderHome();
     if (p === "sources") renderSources();
-    $("mapnav").innerHTML = `<button class="navlogo" data-act="page" data-page="home" aria-label="Home">${logoImg("")}</button>` + tabs();
+    $("mapnav").innerHTML = tabs();   // one menu, centred, same place on every page
     if (p === "home" || p === "sources") { const el = $(p); el.scrollTop = 0; }
     if (p === "map" && REAL) { MAP.resize(); fitReal(false); }
   }

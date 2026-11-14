@@ -35,7 +35,7 @@ body.real .ctl.sat { display: block; }
 .page { position: absolute; inset: 0; z-index: 20; overflow-y: auto; background: var(--sand); display: none; }
 body.page-home #home, body.page-sources #sources { display: block; }
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px 56px; }
-.topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0; flex-wrap: wrap; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0; min-height: 84px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 10px; font: 500 24px Fraunces, serif; color: var(--ink); }
 .brand .logo { width: 44px; height: 44px; border-radius: 50%; display: block; box-shadow: 0 4px 12px rgba(60,70,50,.18); }
 .tabs .navlogo { width: 36px; height: 36px; padding: 0; margin-right: 2px; border-radius: 50%; }
@@ -44,7 +44,9 @@ body.page-home #home, body.page-sources #sources { display: block; }
 .tabs { display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 18px; background: rgba(255,255,255,.85); box-shadow: 0 4px 14px rgba(60,70,50,.12); }
 .tabs button { padding: 9px 16px; border-radius: 14px; font: 600 13.5px Inter, sans-serif; color: var(--ink); }
 .tabs button.on { background: var(--olive2); color: #1c2616; }
-#mapnav { position: absolute; top: 24px; left: 408px; z-index: 6; display: none; }
+/* one menu for all pages: centred at the top, above the pages, never moving */
+#mapnav { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 25; display: none; }
+@media (min-width: 861px) { body.page-home #mapnav, body.page-sources #mapnav { display: flex; } .topbar .tabs { display: none; } }
 @media (min-width: 1280px) { body.page-map #mapnav { display: flex; } .ctl.home-btn { display: none; } }
 .hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; padding: 28px 0 40px; }
 .eyebrow { display: inline-block; padding: 5px 12px; border-radius: 12px; background: var(--olive2); color: #1c2616; font: 600 12.5px Inter, sans-serif; }
