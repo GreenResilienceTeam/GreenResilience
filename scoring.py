@@ -21,11 +21,13 @@ SPECIAL_PENALTIES = {
                        "calcareous, so the match is multiplied by 0.4."),
 }
 # Halophytes (Salicornia) only do well with saline irrigation water (~30 g/L).
-# Without it, in normal soils (ECe <= HALOPHYTE_MAX_ECE), the salt score is set LOW.
+# Zone has saline water (zone["saline_water_available"]) -> salt score 1.0 (no penalty).
+# Zone has none                                            -> salt score set LOW (0.3) + warning.
 HALOPHYTE_SALT_SCORE = {"sea asparagus": 0.3}
-HALOPHYTE_MAX_ECE = 6.0
 HALOPHYTE_WARNING = ("Needs saline/seawater irrigation (~30 g/L). This zone is assumed to have "
                      "none, so the salt score is set to 0.3.")
+GOOD_SCORE = 0.7           # all three sub-scores >= this -> "fits well" explanation
+PH_REASON = "it needs acidic soil (pH 4.5-5.5) but local soils are calcareous"
 # =====================================================================
 
 
@@ -82,17 +84,20 @@ def evaluate(crop, zone, planting_date, delta_T=0.0, rain_factor=1.0):
 
     # 1) temperature: average daily trapezoid score
     temp_score = float(temp_trapezoid(temp, p["t_opt_min"], p["t_opt_max"]).mean())
+    cold_pct = float((temp < p["t_opt_min"]).mean() * 100)   # % of days below the optimum
+    hot_pct = float((temp > p["t_opt_max"]).mean() * 100)    # % of days above the optimum
     # 2) water: the gap between need and rain must be irrigated
     rain_mm = float(rain.sum())
     gap = max(0.0, p["water_need_mm"] - rain_mm)
     water_score = 1 - WATER_GAP_PENALTY * gap / p["water_need_mm"]
     # 3) salt: FAO relative yield
     salt_score = salt_relative_yield(z["ece"], p["ece_threshold"], p["ece_slope"])
-    #    halophyte without saline water -> low score + warning
-    needs_saline = (crop in HALOPHYTE_SALT_SCORE and not z.get("saline_water", False)
-                    and z["ece"] <= HALOPHYTE_MAX_ECE)
-    if needs_saline:
-        salt_score = HALOPHYTE_SALT_SCORE[crop]
+    #    halophyte: no penalty with saline water, low score without it
+    is_halophyte = crop in HALOPHYTE_SALT_SCORE
+    saline_ok = bool(z.get("saline_water_available", False))
+    needs_saline = is_halophyte and not saline_ok
+    if is_halophyte:
+        salt_score = 1.0 if saline_ok else HALOPHYTE_SALT_SCORE[crop]
     # 4) geometric mean: one bad factor pulls everything down
     match = (temp_score * water_score * salt_score) ** (1 / 3)
     # 5) special penalties (blueberry pH)
@@ -108,24 +113,47 @@ def evaluate(crop, zone, planting_date, delta_T=0.0, rain_factor=1.0):
         "water_score": water_score, "salt_score": salt_score, "irrigation_mm": gap,
         "rain_mm": rain_mm, "expected_yield_pct": salt_score * temp_score * 100,
         "in_planting_months": date.month in p["plant_months"], "warning": warning, "needs_saline": needs_saline,
+        "uses_seawater": is_halophyte and saline_ok, "penalty_factor": factor,
+        "cold_pct": cold_pct, "hot_pct": hot_pct,
     }
-    result["explanation"] = explain(p, result)
+    zone_name = zone if isinstance(zone, str) else z.get("name", "this zone")
+    result["explanation"] = explain(p, result, zone_name)
     return result
 
 
-def explain(p, r):
-    """One sentence naming the weakest of the three factors."""
+def explain(p, r, zone_name):
+    """Plain-language sentence:
+    "{Crop} scores {X}% in {zone}. Main limit: {factor}, {reason}."  or, when all three
+    sub-scores are good, "{Crop} scores {X}% in {zone} and fits well: {reason}."
+    """
+    head = f"{p['display_name']} scores {r['match'] * 100:.0f}% in {zone_name}"
     scores = {"temperature": r["temp_score"], "water": r["water_score"], "soil salinity": r["salt_score"]}
+    all_good = all(v >= GOOD_SCORE for v in scores.values())
+    if all_good and r["penalty_factor"] < 1:      # e.g. blueberry: the pH penalty is the real limit
+        return f"{head}. Main limit: soil pH, {PH_REASON}."
+    if all_good:
+        if r["irrigation_mm"] >= 1:
+            water = f"about {r['irrigation_mm']:.0f} mm of irrigation tops up the {r['rain_mm']:.0f} mm of rain"
+        else:
+            water = "rain covers its water need"
+        seawater = " with seawater irrigation (assumed available)" if r["uses_seawater"] else ""
+        return (f"{head} and fits well: temperature, water and soil salinity are all in a good range{seawater}; "
+                f"{water}.")
     weakest = min(scores, key=scores.get)
-    detail = {
-        "temperature": f"the temperatures are often outside its {p['t_opt_min']:.0f}-{p['t_opt_max']:.0f} C optimum",
-        "water": f"rain covers only {r['rain_mm']:.0f} of {p['water_need_mm']:.0f} mm, so about "
-                 f"{r['irrigation_mm']:.0f} mm of irrigation is needed",
-        "soil salinity": f"the soil salinity is above its tolerance of {p['ece_threshold']:.1f} dS/m",
-    }[weakest]
-    if weakest == "soil salinity" and r["needs_saline"]:
-        detail = "it needs saline/seawater irrigation, which this zone does not have"
-    return f"{p['display_name']} scores {r['match'] * 100:.0f}%; the main limit is {weakest}: {detail}."
+    if weakest == "temperature":
+        cold, hot = round(r["cold_pct"]), round(r["hot_pct"])   # whole % as shown in the text
+        reason = (f"too cold during {cold:.0f}% of the growing season" if cold >= hot
+                  else f"too hot during {hot:.0f}% of the growing season")
+        if min(cold, hot) >= 1:
+            reason += (f" and too hot during {hot:.0f}%" if cold >= hot else f" and too cold during {cold:.0f}%")
+    elif weakest == "water":
+        reason = (f"about {r['irrigation_mm']:.0f} mm of irrigation needed because only "
+                  f"{r['rain_mm']:.0f} mm of rain falls in the growing season")
+    elif r["needs_saline"]:
+        reason = "it needs saline/seawater irrigation (~30 g/L), which this zone does not have"
+    else:
+        reason = f"yield drops by {(1 - r['salt_score']) * 100:.0f}% at this soil salinity"
+    return f"{head}. Main limit: {weakest}, {reason}."
 
 
 def scan_year(crop, zone, delta_T=0.0, rain_factor=1.0):

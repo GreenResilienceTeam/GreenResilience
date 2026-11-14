@@ -15,6 +15,7 @@ into a single **match %**.
 ```bash
 pip install -r requirements.txt
 python precompute.py      # (re)builds data/results.csv and data/best_windows.csv
+python export_ui_data.py  # (re)builds data/ui_data.json for the interface
 python test_scoring.py    # sanity tests -> "ALL TESTS PASSED"
 streamlit run app.py
 ```
@@ -29,7 +30,10 @@ already in `data/`.
 - `scoring.py`: the model
 - `precompute.py`: all crops × zones × planting weeks → CSVs
 - `test_scoring.py`: tests
-- `app.py`: Streamlit app
+- `export_ui_data.py`: runs the model for every crop × zone × week × Field Shift step → `data/ui_data.json`
+- `app.py`: Streamlit app that shows the designed interface full screen
+- `ui/`: the interface (HTML, CSS, JS) built from the team's design files in `design/`
+- `assets/photos/`: crop photos (Creative Commons, credits in `assets/photos/CREDITS.md`)
 
 ## Data sources
 

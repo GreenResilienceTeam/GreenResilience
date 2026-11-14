@@ -1,0 +1,126 @@
+/* Crop Match UI. Values copied from the team's design files:
+   design/Web 16:9 (Desktop.dc.html) and design/Pinatar_Agronomy_Mobile_UI.html */
+:root {
+  --sand: #ece4d2; --ink: #2b3a2f; --ink2: #1f2e27; --muted: #4a5a4d; --muted2: #3d4d41;
+  --olive: #8d9f53; --olive2: #95a750; --teal: #62958e; --amber: #d9a441; --sea: #84abc8;
+  --aqua: #6da7a7; --chip: #e9eedb; --track: #e1e6d3; --handle: #b9c1ab; --red: #b9603e;
+  --glass: rgba(250, 249, 243, .88); --shadow: 0 8px 32px rgba(60, 70, 50, .22);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--sand); color: var(--ink); font-family: Inter, sans-serif; -webkit-font-smoothing: antialiased; }
+button { font: inherit; border: 0; cursor: pointer; color: inherit; background: none; }
+#app { position: relative; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; }
+#map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.zone { cursor: pointer; outline: none; }
+.zone:hover .poly, .zone:focus-visible .poly { filter: brightness(1.08); }
+.zone:focus-visible .pin-ring { stroke: var(--ink); }
+
+/* ---- top left: search + chips ---- */
+#topleft { position: absolute; left: 24px; top: 24px; width: 360px; display: flex; flex-direction: column; gap: 12px; z-index: 6; }
+.search { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; background: rgba(255,255,255,.94); border-radius: 20px; padding: 12px 10px 12px 18px; box-shadow: 0 8px 24px rgba(60,70,50,.18); }
+.search-txt { flex: 1; display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.lbl { font: 500 12px Inter, sans-serif; color: var(--muted); }
+.cropchip { display: inline-block; margin-top: 5px; padding: 5px 12px; border-radius: 12px; background: var(--olive); color: #161e12; font: 600 13px Inter, sans-serif; }
+.chev { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: #2F4A42; }
+.chips { display: flex; gap: 8px; }
+.chip { padding: 10px 18px; border-radius: 20px; font: 600 13px Inter, sans-serif; background: rgba(255,255,255,.92); color: var(--ink); box-shadow: 0 2px 8px rgba(60,70,50,.12); white-space: nowrap; }
+.chip.on { background: var(--olive2); color: #1c2616; }
+.dropdown { background: rgba(250,249,243,.97); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 20px; box-shadow: var(--shadow); padding: 8px; max-height: min(60vh, 520px); overflow-y: auto; }
+.dropdown .hint { font: 500 11.5px Inter, sans-serif; color: var(--muted); padding: 4px 10px 6px; }
+.opt { display: flex; align-items: center; gap: 12px; width: 100%; padding: 7px 10px; border-radius: 14px; text-align: left; }
+.opt:hover, .opt.on { background: var(--chip); }
+.opt img, .opt .ph { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: 0 0 40px; background: #ded6c0; display: flex; align-items: center; justify-content: center; font-family: Fraunces, serif; }
+.opt .nm { font: 600 14px Inter, sans-serif; flex: 1; color: var(--ink); }
+.pct { font: 700 12px Inter, sans-serif; padding: 4px 8px; border-radius: 10px; color: #161e12; }
+
+/* ---- map controls + lens ---- */
+#controls { position: absolute; right: 468px; top: 24px; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; z-index: 5; pointer-events: none; }
+#controls > * { pointer-events: auto; }
+.ctl { width: 44px; height: 44px; border-radius: 14px; background: rgba(255,255,255,.92); box-shadow: 0 4px 12px rgba(60,70,50,.18); color: var(--ink); font: 600 18px Inter, sans-serif; }
+.lensbtn { height: 44px; padding: 0 16px; border-radius: 14px; background: var(--teal); color: #0c1f1c; font: 700 12px Inter, sans-serif; box-shadow: 0 0 14px rgba(149,167,80,.7); white-space: nowrap; }
+.lensbtn.active { box-shadow: 0 0 0 4px rgba(149,167,80,.35), 0 0 18px rgba(149,167,80,.9); }
+.glass { background: rgba(250,249,243,.94); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: var(--shadow); }
+#lens { position: absolute; right: 468px; top: 190px; width: 300px; z-index: 7; padding: 18px 20px 14px; border-radius: 24px; }
+.lens-h { font: 500 22px Fraunces, serif; color: var(--ink); }
+.lens-p { margin: 4px 0 12px; font: 400 12.5px/1.45 Inter, sans-serif; color: var(--muted2); }
+#lens label { display: flex; justify-content: space-between; font: 600 13px Inter, sans-serif; color: var(--ink); margin-top: 8px; }
+#lens input[type=range] { width: 100%; accent-color: var(--teal); margin: 8px 0 4px; height: 24px; }
+.lens-btns { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+.done { height: 36px; padding: 0 18px; border-radius: 18px; background: var(--teal); color: #0c1f1c; font: 700 13px Inter, sans-serif; }
+.lnk { font: 600 12.5px Inter, sans-serif; color: #14403f; text-decoration: underline; padding: 6px 0; }
+
+/* ---- legend ---- */
+#legend { position: absolute; left: 24px; bottom: 24px; padding: 10px 16px; border-radius: 16px; background: rgba(255,255,255,.92); font: 500 12px Inter, sans-serif; color: var(--ink); display: flex; gap: 10px; align-items: center; z-index: 4; }
+.grad { width: 90px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--red), var(--amber), var(--olive)); }
+
+/* ---- result panel (desktop) ---- */
+#panel { position: absolute; right: 24px; top: 24px; bottom: 24px; width: 420px; border-radius: 32px; background: var(--glass); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: var(--shadow); z-index: 5; display: flex; flex-direction: column; overflow: hidden; }
+#panelBody { padding: 24px 28px 28px; overflow-y: auto; flex: 1; scrollbar-width: thin; scrollbar-color: var(--handle) transparent; }
+.handle-zone { display: none; }
+.hdr { display: flex; align-items: center; gap: 14px; }
+.title { font: 500 30px/1.1 Fraunces, serif; color: var(--ink); }
+.title span { font-size: 17px; color: var(--muted); }
+.lvl { display: inline-block; margin-top: 6px; padding: 3px 9px; border-radius: 10px; font: 700 11.5px Inter, sans-serif; color: #161e12; }
+.photo { margin: 14px 0 0; position: relative; border-radius: 20px; overflow: hidden; height: 128px; background: #ded6c0; }
+.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo figcaption { position: absolute; right: 8px; bottom: 6px; max-width: 92%; font: 500 9.5px Inter, sans-serif; color: #fff; background: rgba(20,30,25,.45); padding: 2px 7px; border-radius: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.desc { margin: 12px 0; font: 400 14px/1.45 Inter, sans-serif; color: var(--muted2); }
+.tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.tag { padding: 8px 12px; border-radius: 12px; background: var(--chip); font: 600 12px Inter, sans-serif; color: var(--ink); }
+.www { margin-top: 14px; font: 400 14px/1.7 Inter, sans-serif; color: var(--ink); }
+.rings { display: flex; justify-content: space-between; gap: 4px; margin-top: 14px; }
+.ring { text-align: center; font: 500 12px Inter, sans-serif; color: var(--muted); flex: 1; }
+.ring svg { display: block; margin: 0 auto 2px; }
+.ring small { display: block; font-size: 10.5px; color: #77827a; margin-top: 1px; }
+.yield { margin-top: 14px; padding: 12px 14px; border-radius: 16px; background: var(--chip); font: 500 13px Inter, sans-serif; color: var(--ink); }
+.yield b { font-weight: 700; }
+.yield small { display: block; margin-top: 3px; font-size: 11.5px; line-height: 1.4; color: var(--muted); }
+.sec { margin-top: 18px; font: 600 13px Inter, sans-serif; color: var(--ink); }
+.sec small { font-weight: 500; color: var(--muted); }
+.chart { display: block; width: 100%; height: auto; margin-top: 6px; overflow: visible; }
+.wk { cursor: pointer; }
+.wk:hover { opacity: .8; }
+.banner { margin-top: 14px; padding: 11px 14px; border-radius: 14px; background: var(--teal); color: #0c1f1c; font: 600 12px/1.45 Inter, sans-serif; }
+.banner.info { background: #f1e2bd; color: #4a3a14; }
+.banner.shift { background: #dfe8d0; color: var(--ink); }
+.rank { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.rk { display: grid; grid-template-columns: 96px 1fr 40px; align-items: center; gap: 8px; padding: 3px 4px; border-radius: 10px; text-align: left; font: 500 12.5px Inter, sans-serif; color: var(--ink); }
+.rk:hover { background: var(--chip); }
+.rk .bar { height: 10px; border-radius: 5px; background: var(--track); overflow: hidden; }
+.rk .bar i { display: block; height: 100%; border-radius: 5px; }
+.rk b { font-weight: 700; text-align: right; }
+.note { margin-top: 14px; font: 400 11.5px/1.5 Inter, sans-serif; color: var(--muted); }
+.limits { margin-top: 16px; padding: 12px 14px; border-radius: 16px; border: 1px solid rgba(43,58,51,.14); font: 400 11.5px/1.55 Inter, sans-serif; color: var(--muted2); }
+.limits b { display: block; font: 500 15px Fraunces, serif; color: var(--ink); margin-bottom: 4px; }
+.limits ul { margin: 0; padding-left: 16px; }
+.credits { margin-top: 10px; font: 400 10.5px/1.5 Inter, sans-serif; color: #77827a; }
+.credits a { color: inherit; }
+
+/* ---- laptops / projectors: narrower panel ---- */
+@media (max-width: 1180px) and (min-width: 861px) {
+  #panel { width: 380px; }
+  #controls, #lens { right: 420px; }
+  #topleft { width: 320px; }
+  .chip { padding: 9px 14px; }
+}
+
+/* ---- phones and small tablets: bottom sheet (design: Mobile UI Peek / Half / Full) ---- */
+@media (max-width: 860px) {
+  #topleft { left: 16px; right: 16px; top: 16px; width: auto; gap: 10px; }
+  .chips { overflow-x: auto; scrollbar-width: none; margin-right: -16px; padding: 0 16px 6px 0; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { padding: 9px 16px; }
+  #controls { right: 12px; top: 128px; gap: 8px; }
+  .ctl { width: 40px; height: 40px; }
+  .lensbtn { height: 40px; padding: 0 12px; font-size: 11.5px; }
+  #lens { left: 16px; right: 64px; width: auto; top: 128px; }
+  #legend { display: none; }
+  #panel { left: 8px; right: 8px; top: auto; bottom: 0; width: auto; height: var(--sheet-h, 55%); border-radius: 32px 32px 0 0; transition: height .25s ease; box-shadow: 0 -8px 32px rgba(60,70,50,.22); }
+  #panel.dragging { transition: none; }
+  .handle-zone { display: flex; justify-content: center; padding: 10px 0 8px; cursor: grab; touch-action: none; flex: 0 0 auto; }
+  .handle { width: 40px; height: 4px; border-radius: 2px; background: var(--handle); }
+  #panelBody { padding: 4px 20px 28px; }
+  .title { font-size: 24px; }
+  .title span { font-size: 15px; }
+  .rings { gap: 2px; }
+}

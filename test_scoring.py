@@ -40,4 +40,24 @@ for crop in get_crops().index:
             bad += int(((cols < 0) | (cols > 1)).sum().sum())
 check("all scores between 0 and 1", bad == 0, f"({bad} out of range)")
 
+# Sea asparagus (Salicornia): seawater is assumed available only on the Coast
+sa = {z: best_planting("sea asparagus", z) for z in ZONES}
+coast, inland = sa["Coast"], sa["Inland farmland"]
+check("sea asparagus scores highest on Coast", all(coast["match"] > sa[z]["match"] for z in ZONES if z != "Coast"),
+      "(" + ", ".join(f"{z}: {sa[z]['match']:.2f}" for z in ZONES) + ")")
+check("sea asparagus low inland (no saline water)", inland["salt_score"] == 0.3 and inland["match"] <= coast["match"] - 0.15,
+      f"(inland salt {inland['salt_score']}, match {inland['match']:.2f} vs coast {coast['match']:.2f})")
+
+# Explanations follow the template
+bad = []
+for crop in get_crops().index:
+    for zone in ZONES:
+        r = best_planting(crop, zone)
+        name = get_crops().loc[crop, "display_name"]
+        head = f"{name} scores {r['match'] * 100:.0f}% in {zone}"
+        ok = r["explanation"].startswith(head) and (". Main limit: " in r["explanation"] or " and fits well: " in r["explanation"])
+        if not ok:
+            bad.append(r["explanation"])
+check("explanations follow the template", not bad, f"({len(bad)} bad)" + (f" e.g. {bad[0]}" if bad else ""))
+
 print(f"\n{'ALL TESTS PASSED' if failures == 0 else f'{failures} TEST(S) FAILED'}")

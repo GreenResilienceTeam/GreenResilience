@@ -28,10 +28,13 @@ def load_daily():
 #   ece        = soil salinity (ECe, dS/m)
 #   dT_summer  = temperature offset (C) added in SUMMER_MONTHS
 #   dT_winter  = temperature offset (C) added in all other months
-#   saline_water = True if saline/seawater irrigation (~30 g/L) is available (needed by Salicornia)
+#   saline_water_available = True if saline/seawater irrigation (~30 g/L) is available (needed by
+#                            Salicornia). Coast = True is an ASSUMPTION ("seawater assumed available").
 SUMMER_MONTHS = [5, 6, 7, 8, 9, 10]  # May-Oct = warm half of the year
 ZONES = {
-    "Coast": {"ece": 6.0, "dT_summer": -1.5, "dT_winter": 1.0, "saline_water": False},  # sea breeze cools summer, warms winter
-    "Town": {"ece": 3.0, "dT_summer": 1.0, "dT_winter": 1.0, "saline_water": False},  # urban heat island
-    "Inland farmland": {"ece": 4.0, "dT_summer": 0.0, "dT_winter": 0.0, "saline_water": False},  # same as the SMAP cell
+    "Coast": {"ece": 6.0, "dT_summer": -1.5, "dT_winter": 1.0, "saline_water_available": True},  # sea breeze cools summer, warms winter
+    "Town": {"ece": 3.0, "dT_summer": 1.0, "dT_winter": 1.0, "saline_water_available": False},  # urban heat island
+    "Inland farmland": {"ece": 4.0, "dT_summer": 0.0, "dT_winter": 0.0, "saline_water_available": False},  # same as the SMAP cell
 }
+
+SALINE_WATER_LABEL = "seawater assumed available"   # shown in the app for zones with saline water

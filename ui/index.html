@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crop Match</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500&family=Inter:wght@400;500;600;700&display=swap">
+<style>/*CSS*/</style>
+</head>
+<body>
+<div id="app">
+  <!-- Map (built by ui.js) -->
+  <svg id="map" aria-label="Map of San Pedro del Pinatar with the three model zones"></svg>
+
+  <!-- Top left: crop search + season chips (design: "Select Crop / Plant") -->
+  <div id="topleft">
+    <button class="search" data-act="list" aria-haspopup="listbox">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2F4A42" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <span class="search-txt"><span class="lbl">Select Crop / Plant</span><span class="cropchip" id="cropchip"></span></span>
+      <span class="chev" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+    </button>
+    <div class="dropdown" id="croplist" role="listbox" hidden></div>
+    <div class="chips" id="seasons"></div>
+  </div>
+
+  <!-- Map controls (design: zoom, locate, "Lenses") -->
+  <div id="controls">
+    <button class="ctl" data-act="zoom" aria-label="Zoom in">+</button>
+    <button class="ctl" data-act="locate" aria-label="Reset map view">◎</button>
+    <button class="lensbtn" data-act="lens" id="lensbtn">Lenses · Field Shift</button>
+  </div>
+
+  <!-- Field Shift lens -->
+  <div id="lens" class="glass" hidden>
+    <div class="lens-h">Field Shift</div>
+    <p class="lens-p">What if the climate shifts? Every step is a full model run.</p>
+    <label for="sT">Warming <b id="vT"></b></label>
+    <input type="range" id="sT" min="0" max="4" step="1">
+    <label for="sR">Rain <b id="vR"></b></label>
+    <input type="range" id="sR" min="0" max="4" step="1">
+    <div class="lens-btns"><button class="lnk" data-act="reset">Reset to 2025 climate</button><button class="done" data-act="lens">Done</button></div>
+  </div>
+
+  <!-- Legend (design: bottom left pill) -->
+  <div id="legend">Crop match <span class="grad"></span> <span>poor → good</span> · SMAP cell ≈ 9 km</div>
+
+  <!-- Result panel (desktop: right side, phone: bottom sheet) -->
+  <aside id="panel" aria-label="Crop result">
+    <div class="handle-zone" id="handle"><span class="handle"></span></div>
+    <div id="panelBody"></div>
+  </aside>
+</div>
+
+<script id="data" type="application/json">{{DATA}}</script>
+<script id="photos" type="application/json">{{PHOTOS}}</script>
+<script>/*JS*/</script>
+</body>
+</html>

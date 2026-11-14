@@ -1,0 +1,11 @@
+# Theme colours from design/Pinatar_Agronomy_Mobile_UI.html ("Full" sheet)
+[theme]
+base = "light"
+primaryColor = "#62958e"            # teal: sliders, checkbox, focus
+backgroundColor = "#ece4d2"         # sand map background
+secondaryBackgroundColor = "#f6f3ea" # sidebar / inputs
+textColor = "#2b3a2f"               # ink
+font = "sans serif"                  # Inter is loaded in style.css
+
+[client]
+toolbarMode = "viewer"               # no developer menu for visitors
