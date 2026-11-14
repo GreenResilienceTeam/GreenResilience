@@ -1,4 +1,4 @@
-# Crop Match — NASA Space Apps, theme "Field Shift"
+# Green Resilience — NASA Space Apps, theme "Field Shift"
 
 An interactive Streamlit app that scores how well 10 crops fit three zones around
 **San Pedro del Pinatar (Murcia, Spain)**, finds the best planting date for each crop,

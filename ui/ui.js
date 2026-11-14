@@ -1,4 +1,4 @@
-// Crop Match UI logic. All scores come from data/ui_data.json (made by export_ui_data.py,
+// Green Resilience UI logic. All scores come from data/ui_data.json (made by export_ui_data.py,
 // which runs scoring.py). This file only looks results up and draws them.
 (function () {
   "use strict";
@@ -410,8 +410,8 @@
   // ---------- pages: Home, Map, Sources ----------
   const PAGES = [["home", "Home"], ["map", "Map"], ["sources", "Sources"]];
   const tabs = () => PAGES.map(([p, l]) => `<button class="${S.page === p ? "on" : ""}" data-act="page" data-page="${p}"${S.page === p ? ' aria-current="page"' : ""}>${l}</button>`).join("");
-  const topbar = () => `<div class="topbar"><div class="brand">${logoImg("logo")}Crop Match</div><nav class="tabs" aria-label="Main">${tabs()}</nav></div>`;
-  const footer = () => `<div class="foot"><span>Crop Match · GreenResilience Team · NASA Space Apps Challenge, theme “Field Shift”</span><span>Data: NASA SMAP L4 · SiAR · SoilGrids · FAO</span></div>`;
+  const topbar = () => `<div class="topbar"><div class="brand">${logoImg("logo")}Green Resilience</div><nav class="tabs" aria-label="Main">${tabs()}</nav></div>`;
+  const footer = () => `<div class="foot"><span>Green Resilience Team · NASA Space Apps Challenge, theme “Field Shift”</span><span>Data: NASA SMAP L4 · SiAR · SoilGrids · FAO</span></div>`;
 
   function bestPerZone(z) {   // best crop of a zone on the measured climate, each crop at its own best date
     const s0 = si(0, D.rain.indexOf(100));
@@ -433,7 +433,7 @@
     $("home").innerHTML = `<div class="wrap">${topbar()}
       <div class="hero"><div><span class="eyebrow">NASA Space Apps · Field Shift</span>
         <h1>What to grow, where and when around San Pedro del Pinatar</h1>
-        <p class="lead">Crop Match combines NASA satellite data, local weather stations and soil maps to show farmers which crops fit each zone, the best planting date and how much irrigation they will need, today and in a warmer, drier climate.</p>
+        <p class="lead">Green Resilience combines NASA satellite data, local weather stations and soil maps to show farmers which crops fit each zone, the best planting date and how much irrigation they will need, today and in a warmer, drier climate.</p>
         <div class="cta"><button class="btn primary" data-act="page" data-page="map">Open the map</button><button class="btn ghost" data-act="page" data-page="sources">Where the data comes from</button></div></div>
         <div class="mosaic">${pics.map(k => `<img src="${PH[k].src}" alt="${esc(crop(k).name)}">`).join("")}</div></div>
       <div class="h2">Best crop in each zone</div><p class="sub">From the model, on the weather of ${D.years[0]}–${LAST_YEAR}; each crop at its best planting date.</p>
@@ -458,7 +458,7 @@
     const ref = (text, url, note) => `<li>${text}${url ? ` <a href="${url}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a>` : ""}${note ? `<small>${note}</small>` : ""}</li>`;
     const photos = Object.entries(PH).map(([k, v]) => ref(`${esc(crop(k) ? crop(k).name : k)}: ${esc(v.credit.replace(/^Photo: /, ""))}.`, v.source, "")).join("");
     $("sources").innerHTML = `<div class="wrap">${topbar()}
-      <div class="h2">Sources</div><p class="sub">Where every number in Crop Match comes from. All data is public; only small local extracts are used.</p>
+      <div class="h2">Sources</div><p class="sub">Where every number in Green Resilience comes from. All data is public; only small local extracts are used.</p>
       <div class="bib">
         <div class="card"><h3>Satellite data (NASA)</h3><ol>
           ${ref("Reichle, R. et al. <i>SMAP L4 Global 3-hourly 9 km EASE-Grid Surface and Root Zone Soil Moisture Geophysical Data</i>, Version 8 (SPL4SMGP). NASA National Snow and Ice Data Center DAAC.", "https://www.earthdata.nasa.gov/data/catalog/nsidc-cprd-spl4smgp-008-0", "Root-zone soil moisture, natural evaporation (ETa), rain and temperature of the 9 km cell over San Pedro del Pinatar.")}

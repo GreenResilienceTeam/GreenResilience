@@ -1,4 +1,4 @@
-"""Crop Match app (NASA Space Apps, "Field Shift"). Start with:  streamlit run app.py
+"""Green Resilience app (NASA Space Apps, "Field Shift"). Start with:  streamlit run app.py
 
 The interface is the team's design (ui/index.html + ui/ui.css + ui/ui.js), shown full screen.
 Every number comes from the model: export_ui_data.py runs scoring.py and saves data/ui_data.json.
@@ -17,7 +17,7 @@ UI = HERE / "ui"
 PHOTOS = HERE / "assets" / "photos"
 
 LOGO = HERE / "assets" / "logo.png"
-st.set_page_config(page_title="Crop Match - Field Shift", page_icon=str(HERE / "assets" / "logo_64.png"), layout="wide",
+st.set_page_config(page_title="Green Resilience - Field Shift", page_icon=str(HERE / "assets" / "logo_64.png"), layout="wide",
                    initial_sidebar_state="collapsed")
 
 # Hide Streamlit's own chrome and let the designed page fill the whole window.
