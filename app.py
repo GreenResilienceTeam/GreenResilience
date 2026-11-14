@@ -16,7 +16,8 @@ HERE = Path(__file__).parent
 UI = HERE / "ui"
 PHOTOS = HERE / "assets" / "photos"
 
-st.set_page_config(page_title="Crop Match - Field Shift", page_icon="🌱", layout="wide",
+LOGO = HERE / "assets" / "logo.png"
+st.set_page_config(page_title="Crop Match - Field Shift", page_icon=str(HERE / "assets" / "logo_64.png"), layout="wide",
                    initial_sidebar_state="collapsed")
 
 # Hide Streamlit's own chrome and let the designed page fill the whole window.
@@ -58,11 +59,12 @@ def build_page(version):   # `version` (file times) is part of the cache key
     html = html.replace("/*CSS*/", (UI / "ui.css").read_text())
     html = html.replace("{{DATA}}", safe(data_file.read_text()))
     html = html.replace("{{PHOTOS}}", safe(json.dumps(load_photos())))
+    html = html.replace("{{LOGO}}", "data:image/png;base64," + base64.b64encode(LOGO.read_bytes()).decode())
     html = html.replace("/*JS*/", (UI / "ui.js").read_text())
     return html
 
 
 # Rebuild the page whenever one of the files changes (their modification times are the cache key).
-files = [UI / "index.html", UI / "ui.css", UI / "ui.js", DATA_DIR / "ui_data.json", PHOTOS / "credits.json"]
+files = [UI / "index.html", UI / "ui.css", UI / "ui.js", DATA_DIR / "ui_data.json", PHOTOS / "credits.json", LOGO]
 version = tuple(f.stat().st_mtime for f in files if f.exists())
 components.html(build_page(version), height=820, scrolling=False)

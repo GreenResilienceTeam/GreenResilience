@@ -37,8 +37,11 @@ body.page-home #home, body.page-sources #sources { display: block; }
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px 56px; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 10px; font: 500 24px Fraunces, serif; color: var(--ink); }
-.brand i { width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 50% 45%, #fff 0 5px, var(--teal) 6px); box-shadow: 0 0 0 4px rgba(149,167,80,.35); }
-.tabs { display: flex; gap: 4px; padding: 4px; border-radius: 18px; background: rgba(255,255,255,.85); box-shadow: 0 4px 14px rgba(60,70,50,.12); }
+.brand .logo { width: 44px; height: 44px; border-radius: 50%; display: block; box-shadow: 0 4px 12px rgba(60,70,50,.18); }
+.tabs .navlogo { width: 36px; height: 36px; padding: 0; margin-right: 2px; border-radius: 50%; }
+.navlogo img, .home-btn img { width: 100%; height: 100%; border-radius: 50%; display: block; }
+.ctl.home-btn { padding: 0; overflow: hidden; border-radius: 50%; }
+.tabs { display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 18px; background: rgba(255,255,255,.85); box-shadow: 0 4px 14px rgba(60,70,50,.12); }
 .tabs button { padding: 9px 16px; border-radius: 14px; font: 600 13.5px Inter, sans-serif; color: var(--ink); }
 .tabs button.on { background: var(--olive2); color: #1c2616; }
 #mapnav { position: absolute; top: 24px; left: 408px; z-index: 6; display: none; }

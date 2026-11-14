@@ -4,6 +4,8 @@
   "use strict";
   const D = JSON.parse(document.getElementById("data").textContent);
   const PH = JSON.parse(document.getElementById("photos").textContent);
+  const LOGO = document.getElementById("logo").textContent.trim();   // team logo (data URI)
+  const logoImg = cls => `<img class="${cls}" src="${LOGO}" alt="">`;
 
   // Palette from the design files
   const C = { olive: "#8d9f53", olive2: "#95a750", teal: "#62958e", amber: "#d9a441", sea: "#84abc8",
@@ -408,7 +410,7 @@
   // ---------- pages: Home, Map, Sources ----------
   const PAGES = [["home", "Home"], ["map", "Map"], ["sources", "Sources"]];
   const tabs = () => PAGES.map(([p, l]) => `<button class="${S.page === p ? "on" : ""}" data-act="page" data-page="${p}"${S.page === p ? ' aria-current="page"' : ""}>${l}</button>`).join("");
-  const topbar = () => `<div class="topbar"><div class="brand"><i></i>Crop Match</div><nav class="tabs" aria-label="Main">${tabs()}</nav></div>`;
+  const topbar = () => `<div class="topbar"><div class="brand">${logoImg("logo")}Crop Match</div><nav class="tabs" aria-label="Main">${tabs()}</nav></div>`;
   const footer = () => `<div class="foot"><span>Crop Match · GreenResilience Team · NASA Space Apps Challenge, theme “Field Shift”</span><span>Data: NASA SMAP L4 · SiAR · SoilGrids · FAO</span></div>`;
 
   function bestPerZone(z) {   // best crop of a zone on the measured climate, each crop at its own best date
@@ -493,7 +495,7 @@
     document.body.classList.add("page-" + p);
     if (p === "home") renderHome();
     if (p === "sources") renderSources();
-    $("mapnav").innerHTML = tabs();
+    $("mapnav").innerHTML = `<button class="navlogo" data-act="page" data-page="home" aria-label="Home">${logoImg("")}</button>` + tabs();
     if (p === "home" || p === "sources") { const el = $(p); el.scrollTop = 0; }
     if (p === "map" && REAL) { MAP.resize(); fitReal(false); }
   }
@@ -728,6 +730,7 @@
     });
   })();
 
+  document.querySelector(".home-btn").innerHTML = logoImg("");
   applySheet();
   render();
   setPage("home");
