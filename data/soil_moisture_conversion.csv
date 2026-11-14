@@ -1,0 +1,8 @@
+soil_texture,field_capacity_m3m3,wilting_point_m3m3,note
+sand,0.17,0.025-0.09,
+loamy sand,0.09,0.04,
+sandy loam,0.14,0.05,
+loam,0.25-0.32,0.09-0.15,
+silt loam,0.28,0.11,
+clay loam,0.32,0.15,
+clay,0.32,0.20,"source: stormwater.pca.state.mn.us Soil_water_storage_properties; biologists' 5-30 kPa = wet range near field capacity (irrigated). SMAP sm_rootzone is m3/m3 so compare to field capacity of the zone's soil"

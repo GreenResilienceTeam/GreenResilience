@@ -1,0 +1,11 @@
+# Raw NASA files (too large for the repo)
+*.nc4
+all_3hourly.csv
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS
+.DS_Store
