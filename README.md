@@ -33,6 +33,7 @@ already in `data/`.
 - `export_ui_data.py`: runs the model for every crop × zone × week × Field Shift step → `data/ui_data.json`
 - `app.py`: Streamlit app that shows the designed interface full screen
 - `ui/`: the interface (HTML, CSS, JS) built from the team's design files in `design/`
+- `ui/i18n.js`: all interface texts in English and Spanish (language switch in the menu)
 - `assets/photos/`: crop photos (Creative Commons, credits in `assets/photos/CREDITS.md`)
 
 ## Data sources

@@ -26,7 +26,7 @@
   <div id="topleft">
     <button class="search" data-act="list" aria-haspopup="listbox">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2F4A42" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-      <span class="search-txt"><span class="lbl">Select Crop / Plant</span><span class="cropchip" id="cropchip"></span></span>
+      <span class="search-txt"><span class="lbl" data-i18n="selectCrop">Select Crop / Plant</span><span class="cropchip" id="cropchip"></span></span>
       <span class="chev" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
     </button>
     <div class="dropdown" id="croplist" role="listbox" hidden></div>
@@ -35,26 +35,27 @@
 
   <!-- Map controls (design: zoom, locate, "Lenses") -->
   <div id="controls">
-    <button class="ctl home-btn" data-act="page" data-page="home" aria-label="Home"></button>
-    <button class="ctl" data-act="zoom" aria-label="Zoom in">+</button>
-    <button class="ctl" data-act="locate" aria-label="Reset map view">◎</button>
-    <button class="ctl sat" data-act="sat" id="satbtn" aria-label="Satellite view" aria-pressed="false">🛰</button>
+    <button class="ctl home-btn" data-act="page" data-page="home" data-i18n-aria="homeBtn" aria-label="Home"></button>
+    <button class="ctl lang-btn" data-act="lang" aria-label="Language">ES</button>
+    <button class="ctl" data-act="zoom" data-i18n-aria="zoomIn" aria-label="Zoom in">+</button>
+    <button class="ctl" data-act="locate" data-i18n-aria="resetView" aria-label="Reset map view">◎</button>
+    <button class="ctl sat" data-act="sat" id="satbtn" data-i18n-aria="satView" aria-label="Satellite view" aria-pressed="false">🛰</button>
     <button class="lensbtn" data-act="lens" id="lensbtn">Lenses · Field Shift</button>
   </div>
 
   <!-- Field Shift lens -->
   <div id="lens" class="glass" hidden>
-    <div class="lens-h">Field Shift</div>
-    <p class="lens-p">What if the climate shifts? Every step is a full model run.</p>
-    <label for="sT">Warming <b id="vT"></b></label>
+    <div class="lens-h" data-i18n="fieldShift">Field Shift</div>
+    <p class="lens-p" data-i18n="lensIntro">What if the climate shifts? Every step is a full model run.</p>
+    <label for="sT"><span data-i18n="warming">Warming</span> <b id="vT"></b></label>
     <input type="range" id="sT" min="0" max="4" step="1">
-    <label for="sR">Rain <b id="vR"></b></label>
+    <label for="sR"><span data-i18n="rain">Rain</span> <b id="vR"></b></label>
     <input type="range" id="sR" min="0" max="4" step="1">
-    <div class="lens-btns"><button class="lnk" data-act="reset">Reset to 2025 climate</button><button class="done" data-act="lens">Done</button></div>
+    <div class="lens-btns"><button class="lnk" data-act="reset" data-i18n="reset">Reset to measured climate</button><button class="done" data-act="lens" data-i18n="done">Done</button></div>
   </div>
 
   <!-- Legend (design: bottom left pill) -->
-  <div id="legend">Crop match <span class="grad"></span> <span>poor → good</span> · zones approximate</div>
+  <div id="legend"><span data-i18n="legendMatch">Crop match</span> <span class="grad"></span> <span data-i18n="legendScale">poor → good</span> · <span data-i18n="legendZones">zones approximate</span></div>
 
   <!-- Result panel (desktop: right side, phone: bottom sheet) -->
   <aside id="panel" aria-label="Crop result">
@@ -68,6 +69,7 @@
 <script id="data" type="application/json">{{DATA}}</script>
 <script id="photos" type="application/json">{{PHOTOS}}</script>
 <script id="logo" type="text/plain">{{LOGO}}</script>
+<script>/*I18N*/</script>
 <script>/*JS*/</script>
 </body>
 </html>
