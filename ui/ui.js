@@ -248,6 +248,163 @@
     $("map").setAttribute("viewBox", `${vx.toFixed(1)} ${vy.toFixed(1)} ${(W / s).toFixed(1)} ${(H / s).toFixed(1)}`);
   }
 
+  // ---------- real map: MapLibre + OpenFreeMap (OpenStreetMap data, free, no key) ----------
+  // Zone shapes are APPROXIMATE (illustration of the three model zones around San Pedro del Pinatar).
+  const ZONE_GEO = {
+    "Town": [[[-0.806, 37.829], [-0.795, 37.826], [-0.784, 37.829], [-0.779, 37.841], [-0.786, 37.851], [-0.800, 37.850], [-0.808, 37.841], [-0.806, 37.829]]],
+    "Coast": [[[-0.784, 37.829], [-0.771, 37.834], [-0.761, 37.848], [-0.763, 37.864], [-0.775, 37.868], [-0.781, 37.857], [-0.779, 37.841], [-0.784, 37.829]],
+              [[-0.815, 37.823], [-0.806, 37.829], [-0.795, 37.826], [-0.784, 37.829], [-0.787, 37.821], [-0.800, 37.817], [-0.815, 37.817], [-0.815, 37.823]]],
+    "Inland farmland": [[[-0.870, 37.822], [-0.815, 37.823], [-0.806, 37.829], [-0.808, 37.841], [-0.812, 37.860], [-0.870, 37.864], [-0.870, 37.822]]],
+  };
+  const ZONE_PIN = { "Town": [-0.793, 37.839], "Coast": [-0.770, 37.853], "Inland farmland": [-0.842, 37.843] };
+  const STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
+  const SAT = { url: "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/g/{z}/{y}/{x}.jpg",
+    attribution: '<a href="https://s2maps.eu" target="_blank" rel="noopener">Sentinel-2 cloudless 2023</a> by EOX (modified Copernicus Sentinel data)' };
+  let MAP = null, REAL = false, SATON = false;
+  const MARKERS = {};
+
+  function restyle() {   // recolour the OpenStreetMap style with the design palette
+    const set = (id, prop, val) => { try { MAP.setPaintProperty(id, prop, val); } catch (e) { /* layer without this property */ } };
+    MAP.getStyle().layers.forEach(l => {
+      const id = l.id.toLowerCase();
+      if (l.type === "background") set(l.id, "background-color", "#ece4d2");
+      else if (l.type === "fill") {
+        if (/water|ocean|sea|lake|river|basin/.test(id)) set(l.id, "fill-color", "#84abc8");
+        else if (/building/.test(id)) { set(l.id, "fill-color", "#ddd2b8"); set(l.id, "fill-outline-color", "#cfc3a6"); }
+        else if (/sand|beach/.test(id)) set(l.id, "fill-color", "#efe2c2");
+        else if (/park|wood|forest|grass|landcover|farm|meadow|vegetation|scrub|orchard|vineyard/.test(id)) { set(l.id, "fill-color", "#d9dcb6"); set(l.id, "fill-opacity", 0.7); }
+        else if (/residential|landuse|urban|industrial|commercial/.test(id)) set(l.id, "fill-color", "#e4d9c1");
+      } else if (l.type === "line") {
+        if (/water|river|stream|canal/.test(id)) set(l.id, "line-color", "#84abc8");
+        else if (/boundary|admin/.test(id)) set(l.id, "line-color", "#c2b79c");
+        else if (/rail/.test(id)) set(l.id, "line-color", "#cfc4aa");
+        else if (/road|highway|street|path|motorway|trunk|primary|secondary|tertiary|minor|service|track|bridge|tunnel|aeroway/.test(id)) set(l.id, "line-color", "#fbf8f0");
+      } else if (l.type === "symbol" && l.layout && l.layout["text-field"]) {
+        set(l.id, "text-color", /water|sea|ocean/.test(id) ? "#1f4a63" : "#2b3a2f"); set(l.id, "text-halo-color", "#ece4d2");
+      }
+    });
+  }
+
+  function zoneFeatures() {
+    return { type: "FeatureCollection", features: Object.entries(ZONE_GEO).map(([name, poly]) => {
+      const r = res(S.crop, name, weekFor(S.crop, name)), [col] = level(r.matchPct);
+      return { type: "Feature", properties: { name, color: col, on: name === S.zone ? 1 : 0, pct: r.matchPct },
+        geometry: poly.length > 1 ? { type: "MultiPolygon", coordinates: poly.map(p => [p]) } : { type: "Polygon", coordinates: poly } };
+    }) };
+  }
+
+  // selected zone stronger; on the satellite photo all zones need a denser colour to stay visible
+  const zoneOpacity = sat => ["case", ["==", ["get", "on"], 1], sat ? 0.7 : 0.6, sat ? 0.55 : 0.45];
+
+  function addZones() {
+    // zones go above all area fills (fields, town, buildings) but below roads and labels
+    const layers = MAP.getStyle().layers;
+    const lastFill = layers.map(l => l.type).lastIndexOf("fill");
+    const before = layers[lastFill + 1] ? layers[lastFill + 1].id : undefined;
+    MAP.addSource("zones", { type: "geojson", data: zoneFeatures() });
+    MAP.addLayer({ id: "zones-fill", type: "fill", source: "zones", paint: { "fill-color": ["get", "color"], "fill-opacity": zoneOpacity(false) } }, before);
+    MAP.addLayer({ id: "zones-line", type: "line", source: "zones", paint: { "line-color": ["case", ["==", ["get", "on"], 1], "#2b3a2f", ["get", "color"]], "line-width": ["case", ["==", ["get", "on"], 1], 3, 2.2], "line-dasharray": [3, 1.5] } }, before);
+    // the sea goes on top of the zones, so it trims the approximate zone shapes at the shore
+    layers.filter(l => l.type === "fill" && /water/.test(l.id)).forEach(l => MAP.moveLayer(l.id, before));
+    MAP.on("click", "zones-fill", e => selectZone(e.features[0].properties.name));
+    MAP.on("mouseenter", "zones-fill", () => { MAP.getCanvas().style.cursor = "pointer"; });
+    MAP.on("mouseleave", "zones-fill", () => { MAP.getCanvas().style.cursor = ""; });
+    Object.entries(ZONE_PIN).forEach(([name, ll]) => {
+      const el = document.createElement("div");
+      el.className = "zpin"; el.setAttribute("role", "button"); el.tabIndex = 0;
+      el.addEventListener("click", ev => { ev.stopPropagation(); selectZone(name); });
+      el.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); selectZone(name); } });
+      MARKERS[name] = { el, marker: new maplibregl.Marker({ element: el, anchor: "top" }).setLngLat(ll).addTo(MAP) };
+    });
+  }
+
+  function updateRealMap() {
+    if (!REAL) return;
+    MAP.getSource("zones").setData(zoneFeatures());
+    Object.entries(MARKERS).forEach(([name, { el }]) => {
+      const r = res(S.crop, name, weekFor(S.crop, name)), [col] = level(r.matchPct), short = innerWidth <= 860 ? name.split(" ")[0] : name;
+      el.classList.toggle("on", name === S.zone);
+      el.style.setProperty("--c", col);
+      el.setAttribute("aria-label", `${name}: ${r.matchPct}% match`);
+      el.innerHTML = `<div class="pin"><i></i></div><span>${esc(short)} · ${r.matchPct}%</span>`;
+    });
+  }
+
+  function fitReal(animate) {   // show all zones in the free part of the screen
+    if (!REAL) return;
+    const all = Object.values(ZONE_GEO).flat(2), lons = all.map(p => p[0]), lats = all.map(p => p[1]);
+    const mobile = innerWidth <= 860, panelW = innerWidth > 1180 ? 444 : 404;
+    const pad = mobile ? { top: 150, left: 24, right: 64, bottom: sheetPx() + 24 } : { top: 150, left: 60, right: panelW + 90, bottom: 80 };
+    pad.bottom = Math.min(pad.bottom, innerHeight - pad.top - 60);
+    MAP.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: pad, duration: animate ? 600 : 0, maxZoom: 14 });
+  }
+
+  function toggleSatellite() {
+    SATON = !SATON;
+    if (!MAP.getSource("sat")) {
+      MAP.addSource("sat", { type: "raster", tiles: [toWeb(SAT.url)], tileSize: 256, attribution: SAT.attribution, maxzoom: 15 });
+      MAP.addLayer({ id: "sat", type: "raster", source: "sat", layout: { visibility: "none" } }, "zones-fill");
+    }
+    // satellite: hide the drawn ground layers between the photo and the zones, keep labels and roads on top
+    MAP.getStyle().layers.forEach(l => {
+      if (l.id === "sat") MAP.setLayoutProperty("sat", "visibility", SATON ? "visible" : "none");
+      else if (l.type === "fill" && !l.id.startsWith("zones")) MAP.setLayoutProperty(l.id, "visibility", SATON ? "none" : "visible");
+    });
+    MAP.setPaintProperty("zones-fill", "fill-opacity", zoneOpacity(SATON));
+    $("satbtn").classList.toggle("on", SATON);
+    $("satbtn").setAttribute("aria-pressed", SATON ? "true" : "false");
+  }
+
+  function selectZone(name) { S.zone = name; S.list = false; render(); }
+
+  // Every map request goes through the "web://" protocol, which fetches on the main page (works inside
+  // Streamlit's iframe, where the worker's own requests are unreliable).
+  const WEB = "web://";
+  const toWeb = u => (typeof u === "string" ? u.replace(/^https:\/\//, WEB) : u);
+  async function loadStyle() {
+    const style = await (await fetch(STYLE_URL)).json();
+    for (const src of Object.values(style.sources)) {
+      if (src.url) {                                   // TileJSON: read it here and inline the tile URLs
+        const tj = await (await fetch(src.url)).json();
+        ["tiles", "minzoom", "maxzoom", "bounds", "attribution"].forEach(k => { if (tj[k] !== undefined && src[k] === undefined) src[k] = tj[k]; });
+        delete src.url;
+      }
+      if (src.tiles) src.tiles = src.tiles.map(toWeb);
+    }
+    style.glyphs = toWeb(style.glyphs);
+    if (typeof style.sprite === "string") style.sprite = toWeb(style.sprite);
+    else if (Array.isArray(style.sprite)) style.sprite.forEach(sp => { sp.url = toWeb(sp.url); });
+    return style;
+  }
+
+  async function initRealMap() {
+    if (!window.maplibregl) return;                       // no internet / CDN blocked: keep the illustrated map
+    try {
+      maplibregl.addProtocol("web", async (params, abort) => {
+        const r = await fetch(params.url.replace(WEB, "https://"), { signal: abort.signal });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return { data: params.type === "json" ? await r.json() : await r.arrayBuffer() };
+      });
+      if (location.origin === "null") {
+        // Streamlit shows this page in a srcdoc iframe: its origin is "null", but MapLibre's worker (a blob URL)
+        // gets the app's origin, and MapLibre drops messages whose origins differ. A data: URL worker also has
+        // the "null" origin, so both sides match.
+        const code = await (await fetch(maplibregl.getWorkerUrl())).text();
+        maplibregl.setWorkerUrl("data:text/javascript;charset=utf-8," + encodeURIComponent(code));
+      }
+      const style = await loadStyle();
+      MAP = new maplibregl.Map({ container: "realmap", style, center: [-0.81, 37.843], zoom: 12.3,
+        attributionControl: false, dragRotate: false, pitchWithRotate: false, touchPitch: false });
+    } catch (e) { MAP = null; return; }
+    MAP.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
+    MAP.touchZoomRotate.disableRotation();
+    MAP.once("load", () => {
+      try { restyle(); addZones(); } catch (e) { return; }
+      REAL = true; document.body.classList.add("real");
+      MAP.resize(); fitReal(false); updateRealMap();
+    });
+  }
+
   // ---------- top bar ----------
   function renderTop() {
     $("cropchip").textContent = crop(S.crop).name;
@@ -416,7 +573,11 @@
     if (S.info) info.innerHTML = infoCard(S.info);
   }
 
-  function render() { renderTop(); fitView(); $("map").innerHTML = mapSVG(); renderPanel(); }
+  function render() {
+    renderTop();
+    if (REAL) updateRealMap(); else { fitView(); $("map").innerHTML = mapSVG(); }
+    renderPanel();
+  }
 
   // ---------- events ----------
   document.addEventListener("click", e => {
@@ -434,8 +595,9 @@
     else if (act === "closeinfo") { S.info = null; }
     else if (act === "expert") { S.expert = !S.expert; }
     else if (act === "allcrops") { S.allCrops = !S.allCrops; }
-    else if (act === "zoom") { S.zoom = Math.min(S.zoom * 1.3, 2.6); }
-    else if (act === "locate") { S.zoom = 1; }
+    else if (act === "zoom") { if (REAL) MAP.zoomIn(); else S.zoom = Math.min(S.zoom * 1.3, 2.6); }
+    else if (act === "locate") { if (REAL) fitReal(true); else S.zoom = 1; }
+    else if (act === "sat") { if (REAL) toggleSatellite(); return; }
     else if (act === "lens") { S.lens = !S.lens; S.list = false; }
     else if (act === "reset") { S.iT = 0; S.iR = D.rain.indexOf(100); }
     const scroll = $("panelBody").scrollTop;
@@ -448,7 +610,7 @@
   });
   $("sT").addEventListener("input", e => { S.iT = +e.target.value; render(); });
   $("sR").addEventListener("input", e => { S.iR = +e.target.value; render(); });
-  addEventListener("resize", () => { applySheet(); render(); });
+  addEventListener("resize", () => { applySheet(); render(); if (REAL) { MAP.resize(); fitReal(false); } });
 
   // bottom sheet (phones): drag or tap the handle -> peek / half / full
   function applySheet() { $("panel").style.setProperty("--sheet-h", sheetPx() + "px"); }
@@ -467,11 +629,12 @@
       const h = panel.getBoundingClientRect().height / innerHeight, order = ["peek", "half", "full"];
       if (!moved) S.sheet = order[(order.indexOf(S.sheet) + 1) % 3];
       else S.sheet = h < 0.41 ? "peek" : h < 0.74 ? "half" : "full";
-      y0 = null; applySheet(); render();
+      y0 = null; applySheet(); render(); if (REAL) fitReal(true);
     });
   })();
 
   applySheet();
   render();
-  window.__cropMatch = { res, explain, crop, D, S };   // used by the consistency check
+  initRealMap();
+  window.__cropMatch = { res, explain, crop, D, S, map: () => MAP };   // used by the checks
 })();

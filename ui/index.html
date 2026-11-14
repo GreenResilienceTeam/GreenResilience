@@ -6,11 +6,15 @@
 <title>Crop Match</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500&family=Inter:wght@400;500;600;700&display=swap">
+<!-- Real map: MapLibre GL (open source) + OpenFreeMap tiles (OpenStreetMap data, free, no API key) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <style>/*CSS*/</style>
 </head>
 <body>
 <div id="app">
-  <!-- Map (built by ui.js) -->
+  <!-- Map: real map when it loads, the illustrated SVG map otherwise (built by ui.js) -->
+  <div id="realmap"></div>
   <svg id="map" aria-label="Map of San Pedro del Pinatar with the three model zones"></svg>
 
   <!-- Top left: crop search + season chips (design: "Select Crop / Plant") -->
@@ -28,6 +32,7 @@
   <div id="controls">
     <button class="ctl" data-act="zoom" aria-label="Zoom in">+</button>
     <button class="ctl" data-act="locate" aria-label="Reset map view">◎</button>
+    <button class="ctl sat" data-act="sat" id="satbtn" aria-label="Satellite view" aria-pressed="false">🛰</button>
     <button class="lensbtn" data-act="lens" id="lensbtn">Lenses · Field Shift</button>
   </div>
 
@@ -43,7 +48,7 @@
   </div>
 
   <!-- Legend (design: bottom left pill) -->
-  <div id="legend">Crop match <span class="grad"></span> <span>poor → good</span> · SMAP cell ≈ 9 km</div>
+  <div id="legend">Crop match <span class="grad"></span> <span>poor → good</span> · zones approximate</div>
 
   <!-- Result panel (desktop: right side, phone: bottom sheet) -->
   <aside id="panel" aria-label="Crop result">

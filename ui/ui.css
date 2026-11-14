@@ -15,6 +15,22 @@ button { font: inherit; border: 0; cursor: pointer; color: inherit; background: 
 .zone:hover .poly, .zone:focus-visible .poly { filter: brightness(1.08); }
 .zone:focus-visible .pin-ring { stroke: var(--ink); }
 
+/* ---- real map (MapLibre) ---- */
+/* the real map always has a size (MapLibre needs it to load); the SVG map covers it until it is ready */
+#realmap { position: absolute; inset: 0; background: var(--sand); }
+body.real #map { display: none; }
+.ctl.sat { display: none; }
+body.real .ctl.sat { display: block; }
+.ctl.sat.on { background: var(--teal); color: #fff; }
+.zpin { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+.zpin .pin { width: 34px; height: 34px; border-radius: 50%; background: #fff; border: 3px solid var(--c); box-shadow: 0 4px 12px rgba(60,70,50,.25); display: flex; align-items: center; justify-content: center; }
+.zpin .pin i { width: 12px; height: 12px; border-radius: 50%; background: var(--c); }
+.zpin.on .pin { width: 44px; height: 44px; background: var(--teal); border: 4px solid #fff; box-shadow: 0 0 0 6px rgba(149,167,80,.45), 0 6px 16px rgba(60,70,50,.3); }
+.zpin.on .pin i { background: #fff; }
+.zpin span { padding: 3px 9px; border-radius: 10px; background: rgba(250,249,243,.95); font: 700 12.5px Inter, sans-serif; color: var(--ink); white-space: nowrap; box-shadow: 0 2px 8px rgba(60,70,50,.15); }
+.maplibregl-ctrl-attrib { font: 500 10px Inter, sans-serif; }
+.maplibregl-ctrl-bottom-left { bottom: 64px; }
+
 /* ---- top left: search + chips ---- */
 #topleft { position: absolute; left: 24px; top: 24px; width: 360px; display: flex; flex-direction: column; gap: 12px; z-index: 6; }
 .search { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; background: rgba(255,255,255,.94); border-radius: 20px; padding: 12px 10px 12px 18px; box-shadow: 0 8px 24px rgba(60,70,50,.18); }
@@ -191,6 +207,8 @@ button { font: inherit; border: 0; cursor: pointer; color: inherit; background: 
   .lensbtn { height: 40px; padding: 0 12px; font-size: 11.5px; }
   #lens { left: 16px; right: 64px; width: auto; top: 128px; }
   #legend { display: none; }
+  .maplibregl-ctrl-bottom-left { top: 128px; bottom: auto; }
+  .zpin span { font-size: 11.5px; }
   #panel { left: 8px; right: 8px; top: auto; bottom: 0; width: auto; height: var(--sheet-h, 55%); border-radius: 32px 32px 0 0; transition: height .25s ease; box-shadow: 0 -8px 32px rgba(60,70,50,.22); }
   #panel.dragging { transition: none; }
   .handle-zone { display: flex; justify-content: center; padding: 10px 0 8px; cursor: grab; touch-action: none; flex: 0 0 auto; }
