@@ -18,7 +18,8 @@
   const LAST_YEAR = D.years[D.years.length - 1];
 
   const S = { crop: D.crops.some(c => c.key === "tomato") ? "tomato" : D.crops[0].key, zone: "Inland farmland",
-    iT: 0, iR: D.rain.indexOf(100), mode: "best", week: 0, zoom: 1, sheet: "half", list: false, lens: false, year: LAST_YEAR };
+    iT: 0, iR: D.rain.indexOf(100), mode: "best", week: 0, zoom: 1, sheet: "half", list: false, lens: false, year: LAST_YEAR,
+    info: null, expert: false, allCrops: false };
 
   // ---------- small helpers ----------
   const $ = id => document.getElementById(id);
@@ -137,14 +138,7 @@
       `${warm() ? ` (ET₀ +${Math.round(warm() * D.et0_per_c * 100)}% for +${warm()} °C)` : ""}. Rain ${r.rain} mm, of which ${r.effRain} mm is effective (SiAR).</p>`;
   }
 
-  // Year-by-year reliability
-  function yearsCard(r) {
-    const good = r.years.filter(v => v >= 70).length;
-    return `<div class="sec">Year by year <small>· same planting date</small></div><div class="years">` +
-      r.years.map((v, i) => { const [col] = level(v); return `<div class="yr"><span class="yb"><i style="height:${Math.max(4, v)}%;background:${col}"></i></span><b>${v}%</b><small>${D.years[i]}</small></div>`; }).join("") +
-      `<p class="mini">${good === D.years.length ? `Good in all ${good} years.` : good ? `Good in ${good} of ${D.years.length} years.` : `Not a good match in any of the ${D.years.length} years.`} ` +
-      `Shown match = average of the years (SiAR stations ${esc(zone(r.zone).stations.join(" + "))}).</p></div>`;
-  }
+
 
   // Heat: GDD (cycle from temperature), frost and heat-stress days
   function heatCard(p, r) {
@@ -157,18 +151,7 @@
       `Frost days ${r.frost}% · heat-stress days ${r.heat}% · below optimum ${r.cold}% · above optimum ${r.hot}% of the season.</p>`;
   }
 
-  // Soil (SoilGrids) with the crop's pH ranges
-  function soilCard(p, zz, r) {
-    const s = zz.soil, x = v => ((Math.min(9.5, Math.max(4, v)) - 4) / 5.5 * 100).toFixed(1);
-    return `<div class="sec">Soil <small>· SoilGrids 250 m, 0–30 cm</small></div>` +
-      `<div class="phbar"><span class="tol" style="left:${x(p.ph_tol[0])}%;width:${x(p.ph_tol[1]) - x(p.ph_tol[0])}%"></span>` +
-      `<span class="opt" style="left:${x(p.ph_opt[0])}%;width:${x(p.ph_opt[1]) - x(p.ph_opt[0])}%"></span>` +
-      `<span class="mark" style="left:${x(s.ph)}%" title="Soil pH ${s.ph}"></span></div>` +
-      `<div class="phscale">${[4, 5, 6, 7, 8, 9].map(v => `<span style="left:${x(v)}%">${v}</span>`).join("")}</div>` +
-      `<div class="legend"><span>${dot(C.olive)}optimum pH ${p.ph_opt.join("–")}</span><span>${dot("#cdd6b3")}tolerated ${p.ph_tol.join("–")}</span><span>${dot(C.ink)}soil pH <b>${s.ph.toFixed(1)}</b> → factor ${r.ph.toFixed(2)}</span></div>` +
-      `<p class="mini">${s.texture[0].toUpperCase() + s.texture.slice(1)} (clay ${s.clay}% · silt ${s.silt}% · sand ${s.sand}%), organic carbon ${s.soc_g_kg} g/kg, ` +
-      `field capacity ${s.fc} m³/m³, wilting point ${s.wp} m³/m³. Salinity ${zz.ece} dS/m is a model estimate.</p>`;
-  }
+
 
   // Monthly rain vs evaporation demand (SiAR mean of the years) + NASA SMAP natural ET of the 9 km cell
   function monthlyChart(z) {
@@ -251,7 +234,9 @@
     return s;
   }
 
-  function sheetPx() { return innerHeight * { peek: 0.27, half: 0.5, full: 0.92 }[S.sheet]; }
+  function sheetPx() {   // full sheet stops below the search bar and season chips
+    return S.sheet === "full" ? innerHeight - 144 : innerHeight * { peek: 0.27, half: 0.5 }[S.sheet];
+  }
   function fitView() {   // place the zones in the free part of the screen
     const W = innerWidth, H = innerHeight, mobile = W <= 860, panelW = W > 1180 ? 444 : 404;
     const box = mobile ? { x: 200, y: 290, w: 580, h: 290 } : { x: 260, y: 240, w: 480, h: 360 };
@@ -285,49 +270,150 @@
     $("vT").textContent = `+${warm()} °C`; $("vR").textContent = `${D.rain[S.iR]}% of measured rain`;
   }
 
+  // ---------- farmer view helpers ----------
+  const VERDICT = p => (p >= 70 ? "Good choice" : p >= 40 ? "Possible with care" : "Not recommended");
+  const status = v => (v >= D.good_score ? [C.olive, "Good"] : v >= 0.4 ? [C.amber, "Fair"] : [C.red, "Problem"]);
+  const m3 = mm => (Math.round(mm) * 10).toLocaleString("en-US");          // 1 mm = 10 m³ per hectare
+  const part = d => (d <= 10 ? "early" : d <= 20 ? "mid" : "late");
+  const MONTH_FULL = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const when = d => `${part(d.getUTCDate())} ${MONTH_FULL[d.getUTCMonth()]}`;
+  const q = (kind, label) => `<button class="qbtn" data-act="info" data-info="${kind}" aria-label="How is ${label} calculated?">?</button>`;
+  function monthWeek(c, z, m) {   // best planting week inside month m (1-12)
+    const rows = rowsOf(c, z); let best = -1, bw = -1;
+    D.weeks.forEach((_, w) => { if (month(w) === m && rows[w][F.match] > best) { best = rows[w][F.match]; bw = w; } });
+    return bw;
+  }
+
+  function calendarBlock(c, z, p, r) {
+    const rows = rowsOf(c, z), harvestM = r.harvest.getUTCMonth() + 1, plantM = r.plant.getUTCMonth() + 1;
+    const cells = MON.map((name, i) => {
+      const m = i + 1, w = monthWeek(c, z, m), v = rows[w][F.pct], allowed = p.months.includes(m), [col] = level(v);
+      const cls = [allowed ? "" : "out", m === plantM ? "sel" : "", m === harvestM && !p.perennial ? "hv" : ""].join(" ").trim();
+      return `<button class="${cls}" style="background:${col}" data-act="month" data-month="${m}" title="${MONTH_FULL[i]}: best ${v}%${allowed ? "" : " (not a usual planting month)"}">${name[0]}</button>`;
+    }).join("");
+    const txt = p.perennial
+      ? `Perennial: plant once. The score covers a full year from <b>${fmt(r.plant)}</b>.`
+      : `Plant in <b>${when(r.plant)}</b> → harvest around <b>${when(r.harvest)}</b> (≈${r.cycle} days).`;
+    return `<div class="block"><div class="block-h"><span>📅 When to plant</span>${q("calendar", "the planting date")}</div>` +
+      `<div class="cal">${cells}</div><div class="cal-txt">${txt}${r.inMonths ? "" : " <em>Outside its usual planting months.</em>"}</div></div>`;
+  }
+
+  function factRows(p, r, zz) {
+    const [tc, ts] = status(r.temp), [wc, ws] = status(r.water), soilScore = Math.min(r.salt, r.ph), [sc_, ss] = status(soilScore);
+    let tTxt;
+    if (r.gdd < 99) tTxt = `May not ripen: only ${r.gdd}% of the heat it needs.`;
+    else if (r.frost + r.heat >= 5) tTxt = `${r.frost}% frost days and ${r.heat}% very hot days in the season.`;
+    else if (r.temp >= D.good_score) {   // good score: calm wording, mention a mild issue only
+      const mild = Math.max(r.cold, r.hot) >= 15 ? (r.cold >= r.hot ? `; cooler than ideal on ${r.cold}% of days` : `; warmer than ideal on ${r.hot}% of days`) : "";
+      tTxt = `Average ${r.meanT.toFixed(0)} °C, mostly inside its ${p.t_min}–${p.t_max} °C range${mild}.`;
+    } else tTxt = r.cold >= r.hot ? `Too cold on ${r.cold}% of days (likes ${p.t_min}–${p.t_max} °C).` : `Too hot on ${r.hot}% of days (likes ${p.t_min}–${p.t_max} °C).`;
+    const covered = Math.min(100, Math.round(100 * (r.effRain + r.soilWater) / Math.max(1, r.cropWater)));
+    const wTxt = r.irr >= 1 ? `Irrigate ≈ <b class="inl">${m3(r.irr)} m³/ha</b> per season (${r.irr} mm). Rain and soil cover ${covered}%.${r.usesSeawater ? " Seawater." : ""}`
+      : "Rain and soil water cover what it needs.";
+    const salt = r.needsSaline ? "needs seawater irrigation (none here)" : r.usesSeawater ? "seawater irrigation assumed, salt is fine"
+      : r.saltDrop > 0 ? `salt cuts yield by ${r.saltDrop}%` : "salinity fine";
+    const ph = r.ph < 1 ? `pH ${r.soilPh.toFixed(1)} (prefers ${p.ph_opt[0]}–${p.ph_opt[1]})` : `pH ${r.soilPh.toFixed(1)} fine`;
+    const row = (kind, icon, label, v, col, word, txt) => `<div class="fact">${ring(40, v, col, icon, 44, 18, 5, 15)}` +
+      `<div class="fact-t"><b>${label}<em style="color:${col}">· ${word}</em></b>${txt}</div>${q(kind, label.toLowerCase())}</div>`;
+    return `<div class="block"><div class="block-h"><span>Why this score</span></div><div class="facts">` +
+      row("temp", "🌡", "Temperature", r.temp, tc, ts, tTxt) + row("water", "💧", "Water", r.water, wc, ws, wTxt) +
+      row("soil", "🧂", "Soil", soilScore, sc_, ss, `${salt[0].toUpperCase() + salt.slice(1)} · ${ph}.`) + `</div></div>`;
+  }
+
+  function otherCrops(c, z, w) {
+    const ranked = D.crops.map(cc => ({ c: cc, r: res(cc.key, z, weekFor(cc.key, z)) })).sort((x, y) => y.r.match - x.r.match);
+    const top = ranked.filter(x => x.c.key !== c).slice(0, 3);
+    const card = ({ c: cc, r }) => { const [col] = level(r.matchPct);
+      return `<button class="tc" data-act="crop" data-crop="${esc(cc.key)}">${PH[cc.key] ? `<img src="${PH[cc.key].src}" alt="">` : `<span class="ph"></span>`}<b>${esc(cc.name)}</b><span style="background:${col}">${r.matchPct}%</span></button>`; };
+    let h = `<div class="block"><div class="block-h"><span>Other crops for ${esc(z)}</span></div><div class="top3">${top.map(card).join("")}</div>`;
+    if (S.allCrops) h += `<div class="rank">` + ranked.map(({ c: cc, r }) => `<button class="rk" data-act="crop" data-crop="${esc(cc.key)}"><span>${esc(cc.name)}</span><span class="bar"><i style="width:${Math.max(1, r.match * 100)}%;background:${cc.key === c ? C.teal : C.light}"></i></span><b>${r.matchPct}%</b></button>`).join("") + `</div>`;
+    return h + `<button class="linkbtn" data-act="allcrops">${S.allCrops ? "Show fewer" : "Compare all 10 crops"}</button></div>`;
+  }
+
+  // ---------- "?" cards: how each answer is calculated, with this crop's own numbers ----------
+  function infoCard(kind) {
+    const c = S.crop, z = S.zone, p = crop(c), w = weekFor(c, z), r = res(c, z, w), zz = zone(z), st = zz.stations.join(" + ");
+    const li = rows => `<ul class="nums">${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join("")}</ul>`;
+    const src = s => `<div class="src">Sources: ${s}</div>`;
+    const years = `${D.years[0]}–${LAST_YEAR}`;
+    const cards = {
+      match: ["Crop match", `<p>One number for how well the crop fits this place and date. Each factor is a score from 0 to 1; a single weak factor pulls the whole match down.</p>` +
+        `<div class="formula">match = ∛(temperature × water × salinity) × soil pH factor</div>` +
+        li([["Temperature", pct(r.temp) + "%"], ["Water", pct(r.water) + "%"], ["Salinity", pct(r.salt) + "%"], ["Soil pH factor", r.ph.toFixed(2)], ["Match (average of " + D.years.length + " years)", r.matchPct + "%"], ["Expected yield vs ideal*", r.yld + "%"]]) +
+        `<p>* Yield index = salinity × temperature × pH factor. It ignores water because irrigation can fix water; it is an index, not tonnes.</p>` + src("model in scoring.py, weather SiAR " + years)],
+      calendar: ["When to plant", `<p>We test a planting date every 7 days of the year and keep the best one inside the crop's usual planting months (biologists' table). Each month shows its best week: green good, yellow possible, red poor; faded months are outside the usual planting months. Tap a month to see it.</p>` +
+        (p.gdd ? `<p>The season ends when the crop has collected enough heat (growing degree-days):</p><div class="formula">GDD = Σ max(0, daily mean − ${p.t_base} °C) ≥ ${p.gdd} °C·days</div>` +
+          li([["Planting", fmt(r.plant)], ["Heat reached", r.gdd + "%"], ["Season length", r.cycle + " days"], ["Harvest", fmt(r.harvest, true)]]) + `<p>Warmer weather (Field Shift) fills the heat faster, so the season gets shorter.</p>`
+          : li([["Planting", fmt(r.plant)], ["Season length", r.cycle + " days (fixed" + (p.perennial ? ", perennial" : "") + ")"]])) +
+        src("SiAR stations " + st + ", " + years + "; base temperature and degree-days: data/crop_params_extra.csv")],
+      temp: ["Temperature", `<p>Every day of the season gets a score: 1 when the daily mean is inside the crop's comfort range, falling to 0 at 8 °C outside it. Frost (min ≤ 0 °C) and heat-stress days (max ≥ ${p.t_max + 10} °C) take extra points off.</p>` +
+        `<div class="formula">temperature = average daily score × (1 − 2 × share of frost/heat days)${p.gdd ? " × share of the needed heat reached" : ""}</div>` +
+        li([["Comfort range", `${p.t_min}–${p.t_max} °C`], ["Average in the season", r.meanT.toFixed(1) + " °C"], ["Days below / above range", `${r.cold}% / ${r.hot}%`], ["Frost / heat-stress days", `${r.frost}% / ${r.heat}%`], ["Temperature score", pct(r.temp) + "%"]]) +
+        src(`SiAR stations ${st} (daily min, mean, max), ${years}${zz.dT_summer ? `; +${zz.dT_summer} °C urban heat (estimate)` : ""}`)],
+      water: ["Water", `<p>How much water the crop uses each day depends on the weather (reference evaporation, ET₀) and on its growth stage (crop coefficient Kc). What rain and the soil do not supply must be irrigated.</p>` +
+        `<div class="formula">crop water use = Σ Kc × ET₀<br>irrigation = water use − effective rain − water in the soil at planting<br>water score = 1 − 0.5 × irrigation ÷ water use</div>` +
+        `<div class="stack">${[[r.effRain, C.sea], [Math.min(r.soilWater, Math.max(0, r.cropWater - r.effRain)), C.brown], [r.irr, C.teal]].map(([v, col]) => v > 0 ? `<span style="width:${(v / Math.max(1, r.cropWater) * 100).toFixed(1)}%;background:${col}"></span>` : "").join("")}</div>` +
+        `<div class="legend"><span>${dot(C.sea)}effective rain</span><span>${dot(C.brown)}soil water</span><span>${dot(C.teal)}irrigation</span></div>` +
+        li([["Kc (start – middle – end)", p.kc.join(" – ")], ["Crop water use", r.cropWater + " mm"], ["Effective rain (of " + r.rain + " mm)", r.effRain + " mm"], ["Soil water at planting", r.soilWater + " mm"], ["Irrigation", `${r.irr} mm = ${m3(r.irr)} m³/ha`], ["Water score", pct(r.water) + "%"]]) +
+        `<p>1 mm of water on 1 hectare = 10 m³. Only half the gap counts against the crop, because irrigation can close it.</p>` +
+        src(`ET₀ and effective rain: SiAR ${st}, ${years}; soil water: NASA SMAP L4 root-zone moisture × ${p.root_m} m roots, SoilGrids texture; Kc: FAO-56`)],
+      soil: ["Soil", `<p>Salt in the soil lowers yield above a crop-specific threshold (FAO). Soil pH far from the crop's range makes nutrients hard to take up; a soft factor lowers the match.</p>` +
+        `<div class="formula">salinity score = 1 − slope × (soil salinity − threshold)<br>pH factor = 1 in the best range → 0.5 at the tolerance limit → never below 0.3</div>` +
+        `<div class="phbar"><span class="tol" style="left:${phx(p.ph_tol[0])}%;width:${phx(p.ph_tol[1]) - phx(p.ph_tol[0])}%"></span><span class="opt" style="left:${phx(p.ph_opt[0])}%;width:${phx(p.ph_opt[1]) - phx(p.ph_opt[0])}%"></span><span class="mark" style="left:${phx(zz.soil.ph)}%"></span></div>` +
+        `<div class="phscale">${[4, 5, 6, 7, 8, 9].map(v => `<span style="left:${phx(v)}%">${v}</span>`).join("")}</div>` +
+        li([["Soil salinity (estimate)", zz.ece + " dS/m"], ["Salt threshold of this crop", p.ece_threshold + " dS/m"], ["Salinity score", pct(r.salt) + "%"], ["Soil pH / best range", `${zz.soil.ph.toFixed(1)} / ${p.ph_opt.join("–")}`], ["pH factor", r.ph.toFixed(2)], ["Soil type", `${zz.soil.texture}, ${zz.soil.soc_g_kg} g/kg organic carbon`]]) +
+        (zz.saline_water_available ? `<p>Coast: ${esc(D.saline_label)} (assumption) — this matters for sea asparagus.</p>` : "") +
+        src("salinity: model estimate (Campo de Cartagena soils measured 2–10 dS/m), FAO salt tolerance; pH, texture, carbon: ISRIC SoilGrids 250 m")],
+      years: ["Year by year", `<p>The score is calculated separately for every year of measured weather and then averaged. A crop that only works in a wet year is risky.</p>` +
+        `<div class="years">${r.years.map((v, i) => { const [col] = level(v); return `<div class="yr"><span class="yb"><i style="height:${Math.max(4, v)}%;background:${col}"></i></span><b>${v}%</b><small>${D.years[i]}</small></div>`; }).join("")}</div>` +
+        `<p>Good = 70% or more.</p>` + src(`SiAR stations ${st}`)],
+      shift: ["Field Shift", `<p>“What if the climate shifts?” Every day of the measured years is made warmer and/or drier, and the whole model runs again.</p>` +
+        `<div class="formula">temperature + ${warm()} °C · rain × ${D.rain[S.iR]}% · evaporation demand + ${Math.round(D.et0_per_c * 100 * warm())}%</div>` +
+        li([["Match now → shifted", `${r.basePct}% → ${r.matchPct}%`]]) + src("same model; ET₀ rises ~3% per °C (assumption)")],
+    };
+    const [title, body] = cards[kind];
+    return `<button class="close" data-act="closeinfo" aria-label="Close">×</button><h3 id="infoTitle">${title}</h3>${body}`;
+  }
+  const phx = v => ((Math.min(9.5, Math.max(4, v)) - 4) / 5.5 * 100).toFixed(1);
+
   // ---------- result panel ----------
   function renderPanel() {
-    const c = S.crop, z = S.zone, p = crop(c), w = weekFor(c, z), r = res(c, z, w), [col, lab] = level(r.matchPct), zz = zone(z);
-    const how = S.mode === "best" ? "best date" : S.mode === "week" ? "chosen week" : `best in ${S.mode}`;
+    const c = S.crop, z = S.zone, p = crop(c), w = weekFor(c, z), r = res(c, z, w), [col] = level(r.matchPct), zz = zone(z);
     const good = r.years.filter(v => v >= 70).length;
-    let h = `<div class="hdr">${ring(64, r.match, col, r.matchPct + "%", 56, 22, 6, 14)}<div><div class="title">${esc(p.name)} <span>(${esc(z)})</span></div>` +
-      `<span class="lvl" style="background:${col}">${lab}</span> <span class="lvl ghost">good in ${good}/${D.years.length} years</span></div></div>`;
+    let h = `<div class="hdr"><button data-act="info" data-info="match" aria-label="How is the match calculated?" style="padding:0">${ring(64, r.match, col, r.matchPct + "%", 56, 22, 6, 14)}</button>` +
+      `<div><div class="title">${esc(p.name)} <span>(${esc(z)})</span></div><span class="verdict" style="background:${col}">${VERDICT(r.matchPct)}</span>` +
+      `<div class="reliab">${r.years.map(v => `<i class="${v >= 70 ? "on" : ""}"></i>`).join("")} good in ${good} of ${D.years.length} years ${q("years", "the yearly result")}</div></div></div>`;
     if (PH[c]) h += `<figure class="photo"><img src="${PH[c].src}" alt="${esc(p.name)}"><figcaption>${esc(PH[c].credit)}</figcaption></figure>`;
     h += `<p class="desc">${esc(explain(p, r))}</p>`;
-    h += `<div class="tags"><span class="tag">${r.meanT.toFixed(0)} °C mean</span><span class="tag">${r.irr} mm irrigation</span><span class="tag">${fmt(r.plant)}–${fmt(r.harvest)} · ${r.cycle} d</span></div>`;
-    h += `<div class="www"><b>Where:</b> ${esc(z)} · ${esc(zz.soil.texture)}, pH ${zz.soil.ph.toFixed(1)} · salinity ${zz.ece} dS/m (estimate)${zz.saline_water_available ? ` · ${esc(D.saline_label)}` : ""}<br>` +
-      `<b>When:</b> plant ${fmt(r.plant)} (${how}) → harvest/end ${fmt(r.harvest, true)}<br>` +
-      `<b>How:</b> about ${r.irr} mm of irrigation on top of ${r.effRain} mm of effective rain${r.usesSeawater ? " (seawater)" : ""}</div>`;
-    h += `<div class="rings">` +
-      `<div class="ring">${ring(72, r.temp, C.olive2, r.meanT.toFixed(0) + "°")}Temp<small>fit ${pct(r.temp)}%</small></div>` +
-      `<div class="ring">${ring(72, r.water, C.sea, pct(r.water) + "%")}Water<small>${r.irr} mm to irrigate</small></div>` +
-      `<div class="ring">${ring(72, r.salt, C.teal, pct(r.salt) + "%")}Salinity<small>ECe ${zz.ece} dS/m</small></div>` +
-      `<div class="ring">${ring(72, r.ph, C.olive, zz.soil.ph.toFixed(1))}Soil pH<small>factor ${r.ph.toFixed(2)}</small></div></div>`;
-    h += `<div class="yield">Crop match <b>${r.matchPct}%</b> · Expected yield vs ideal <b>${r.yld}%</b>` +
-      `<small>Yield index = salt tolerance × temperature fit × pH factor (not tonnes). Crop match also counts water, so the two differ.</small></div>`;
-    if (shifted()) h += `<div class="banner shift">Field Shift: +${warm()} °C, rain ${D.rain[S.iR]}% → ${r.matchPct - r.basePct >= 0 ? "+" : ""}${r.matchPct - r.basePct} points vs the measured ${D.years[0]}–${LAST_YEAR} climate.</div>`;
     if (r.warning) h += `<div class="banner">⚠ ${esc(r.warning)}</div>`;
-    if (!r.inMonths) h += `<div class="banner info">This date is outside the crop's usual planting months.</div>`;
-    h += waterCard(p, r) + yearsCard(r) + heatCard(p, r);
-    h += `<div class="sec">Rain vs evaporation <small>· per month</small></div>${monthlyChart(z)}`;
-    h += soilCard(p, zz, r);
-    const ranked = D.crops.map(cc => { const rr = res(cc.key, z, w); return { c: cc, m: rr.match, p: rr.matchPct }; }).sort((x, y) => y.m - x.m);
-    h += `<div class="sec">All crops in ${esc(z)} <small>· planted ${fmt(r.plant)}</small></div><div class="rank">` +
-      ranked.map(({ c: cc, m, p }) => `<button class="rk" data-act="crop" data-crop="${esc(cc.key)}"><span>${esc(cc.name)}</span><span class="bar"><i style="width:${Math.max(1, m * 100)}%;background:${cc.key === c ? C.teal : C.light}"></i></span><b>${p}%</b></button>`).join("") + `</div>`;
-    h += `<div class="sec">Match by planting week <small>· tap a bar to choose a date</small></div>${weeksChart(c, z, w)}`;
-    h += `<div class="sec">Temperature & rain <small>· growing window ± 30 days</small></div>${climateChart(c, z, r)}`;
-    h += `<p class="note">${p.assumed ? `Assumed values for this crop: ${esc(p.notes)}. ` : ""}Town has no station: mean of MU120 + MU130 plus +1 °C urban heat (estimate). ` +
-      `Windows that run past 31 Dec ${LAST_YEAR} reuse ${LAST_YEAR} data.</p>`;
-    h += `<div class="sources"><span>NASA SMAP L4 · soil moisture, natural ET</span><span>SiAR MU120 · MU130 · weather, ET₀ ${D.years[0]}–${LAST_YEAR}</span><span>SoilGrids · texture, pH, carbon</span><span>FAO-56 · crop water</span></div>`;
-    h += `<div class="limits"><b>Limitations</b><ul>` +
-      `<li>SMAP is 9 km: one grid cell covers all zones; it is used for soil moisture and natural ET, not for zone differences.</li>` +
-      `<li>Soil salinity is not measurable by satellite; zone values are model estimates (Campo de Cartagena soils measured 2–10 dS/m).</li>` +
-      `<li>Weather: SiAR stations ${D.years[0]}–${LAST_YEAR} (gaps filled from the nearest station, flagged). Town is estimated.</li>` +
-      `<li>SoilGrids values are 250 m model predictions; pH ranges and degree-days need checking by the biologists.</li>` +
-      `<li>The map is an illustration; zone shapes are not surveyed boundaries.</li>` +
-      `<li>Data source: NASA SMAP L4 SPL4SMGP v008; SiAR (MAPA); ISRIC SoilGrids 2.0; FAO-56.</li></ul></div>`;
-    h += `<div class="credits">Photos via Openverse: ` + Object.entries(PH).map(([k, v]) => `<a href="${esc(v.source)}" target="_blank" rel="noopener">${esc(crop(k) ? crop(k).name : k)}</a> (${esc(v.short)})`).join(", ") + `.</div>`;
+    h += calendarBlock(c, z, p, r) + factRows(p, r, zz);
+    if (shifted()) {
+      const base = rowsOf(c, z, si(0, D.rain.indexOf(100)))[w], dIrr = r.irr - base[F.irr];
+      h += `<div class="shiftline"><span>With <b>+${warm()} °C</b> and <b>${D.rain[S.iR]}% rain</b>: match ${r.basePct}% → <b>${r.matchPct}%</b>, irrigation ${dIrr >= 0 ? "+" : "−"}${m3(Math.abs(dIrr))} m³/ha.</span>${q("shift", "Field Shift")}</div>`;
+    }
+    h += otherCrops(c, z, w);
+    h += `<button class="expert" data-act="expert" aria-expanded="${S.expert ? "true" : "false"}">How we calculated <span>${S.expert ? "▴" : "▾"}</span></button>`;
+    if (S.expert) {
+      h += `<div class="expert-body"><p class="mini">Match = ∛(temperature × water × salinity) × soil pH factor, averaged over ${D.years.length} years of SiAR weather. Tap any <b>?</b> for the details of one factor.</p>`;
+      h += waterCard(p, r) + heatCard(p, r);
+      h += `<div class="sec">Rain vs evaporation <small>· per month</small></div>${monthlyChart(z)}`;
+      h += `<div class="sec">Match by planting week <small>· tap a bar to choose a date</small></div>${weeksChart(c, z, w)}`;
+      h += `<div class="sec">Temperature & rain <small>· growing window ± 30 days</small></div>${climateChart(c, z, r)}`;
+      h += `<p class="note">${p.assumed ? `Assumed values for this crop: ${esc(p.notes)}. ` : ""}Town has no station: mean of MU120 + MU130 plus +1 °C urban heat (estimate). Windows that run past 31 Dec ${LAST_YEAR} reuse ${LAST_YEAR} data.</p>`;
+      h += `<div class="sources"><span>NASA SMAP L4 · soil moisture, natural ET</span><span>SiAR MU120 · MU130 · weather, ET₀ ${D.years[0]}–${LAST_YEAR}</span><span>SoilGrids · texture, pH, carbon</span><span>FAO-56 · crop water</span></div>`;
+      h += `<div class="limits"><b>Limitations</b><ul>` +
+        `<li>SMAP is 9 km: one grid cell covers all zones; it is used for soil moisture and natural ET, not for zone differences.</li>` +
+        `<li>Soil salinity is not measurable by satellite; zone values are model estimates (Campo de Cartagena soils measured 2–10 dS/m).</li>` +
+        `<li>Weather: SiAR stations ${D.years[0]}–${LAST_YEAR} (gaps filled from the nearest station, flagged). Town is estimated.</li>` +
+        `<li>SoilGrids values are 250 m model predictions; pH ranges and degree-days need checking by the biologists.</li>` +
+        `<li>The map is an illustration; zone shapes are not surveyed boundaries.</li>` +
+        `<li>Data source: NASA SMAP L4 SPL4SMGP v008; SiAR (MAPA); ISRIC SoilGrids 2.0; FAO-56.</li></ul></div>`;
+      h += `<div class="credits">Photos via Openverse: ` + Object.entries(PH).map(([k, v]) => `<a href="${esc(v.source)}" target="_blank" rel="noopener">${esc(crop(k) ? crop(k).name : k)}</a> (${esc(v.short)})`).join(", ") + `.</div></div>`;
+    }
     $("panelBody").innerHTML = h;
+    const info = $("info");
+    info.hidden = !S.info;
+    if (S.info) info.innerHTML = infoCard(S.info);
   }
 
   function render() { renderTop(); fitView(); $("map").innerHTML = mapSVG(); renderPanel(); }
@@ -338,22 +424,27 @@
     if (!el) { if (S.list) { S.list = false; renderTop(); } return; }
     const act = el.dataset.act;
     if (act === "list") { S.list = !S.list; S.lens = false; renderTop(); return; }
-    if (act === "crop") { S.crop = el.dataset.crop; S.list = false; }
+    if (act === "crop") { S.crop = el.dataset.crop; S.list = false; S.info = null; }
     else if (act === "zone") { S.zone = el.dataset.zone; S.list = false; }
     else if (act === "mode") { S.mode = el.dataset.mode; }
     else if (act === "week") { S.mode = "week"; S.week = +el.dataset.w; }
     else if (act === "year") { S.year = +el.dataset.year; }
+    else if (act === "month") { const m = +el.dataset.month; S.mode = "week"; S.week = monthWeek(S.crop, S.zone, m); }
+    else if (act === "info") { S.info = el.dataset.info; if (innerWidth <= 860) { S.sheet = "full"; applySheet(); } }
+    else if (act === "closeinfo") { S.info = null; }
+    else if (act === "expert") { S.expert = !S.expert; }
+    else if (act === "allcrops") { S.allCrops = !S.allCrops; }
     else if (act === "zoom") { S.zoom = Math.min(S.zoom * 1.3, 2.6); }
     else if (act === "locate") { S.zoom = 1; }
     else if (act === "lens") { S.lens = !S.lens; S.list = false; }
     else if (act === "reset") { S.iT = 0; S.iR = D.rain.indexOf(100); }
     const scroll = $("panelBody").scrollTop;
     render();
-    if (act === "year" || act === "week") $("panelBody").scrollTop = scroll;   // keep the reader's place
+    if (["year", "week", "month", "info", "closeinfo", "expert", "allcrops"].includes(act)) $("panelBody").scrollTop = scroll;   // keep the reader's place
   });
   document.addEventListener("keydown", e => {
     if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("zone")) { e.preventDefault(); e.target.dispatchEvent(new MouseEvent("click", { bubbles: true })); }
-    if (e.key === "Escape") { S.list = false; S.lens = false; renderTop(); }
+    if (e.key === "Escape") { S.list = false; S.lens = false; S.info = null; render(); }
   });
   $("sT").addEventListener("input", e => { S.iT = +e.target.value; render(); });
   $("sR").addEventListener("input", e => { S.iR = +e.target.value; render(); });
