@@ -1,0 +1,76 @@
+{
+ "source": "SiAR - Sistema de Informacion Agroclimatica para el Regadio (MAPA, Spain), https://servicio.mapa.gob.es/siarweb/",
+ "data_type": "daily",
+ "downloaded": "2026-11-14",
+ "date_range": [
+  "2023-01-01",
+  "2025-12-31"
+ ],
+ "stations": {
+  "MU120": {
+   "name": "San Javier (Santiago de la Ribera)",
+   "role": "coast reference (Mar Menor shore)"
+  },
+  "MU128": {
+   "name": "Torre Pacheco (Torre Pacheco)",
+   "role": "second inland reference (Campo de Cartagena)"
+  },
+  "MU130": {
+   "name": "San Javier (El Mirador)",
+   "role": "inland farmland reference"
+  }
+ },
+ "units": {
+  "t_mean_C": "degC (daily mean)",
+  "t_max_C": "degC (daily max)",
+  "t_min_C": "degC (daily min)",
+  "precip_mm": "mm/day",
+  "precip_eff_mm": "mm/day (effective precipitation, computed by SiAR)",
+  "et0_mm": "mm/day (reference evapotranspiration, FAO-56 Penman-Monteith, computed by SiAR)"
+ },
+ "missing_values_in_raw_files": {
+  "MU120": {
+   "missing_days": 0,
+   "t_mean_C": 32,
+   "t_max_C": 32,
+   "t_min_C": 32,
+   "precip_mm": 32,
+   "precip_eff_mm": 32,
+   "et0_mm": 32
+  },
+  "MU128": {
+   "missing_days": 0,
+   "t_mean_C": 146,
+   "t_max_C": 146,
+   "t_min_C": 146,
+   "precip_mm": 146,
+   "precip_eff_mm": 146,
+   "et0_mm": 146
+  },
+  "MU130": {
+   "missing_days": 0,
+   "t_mean_C": 146,
+   "t_max_C": 146,
+   "t_min_C": 146,
+   "precip_mm": 146,
+   "precip_eff_mm": 146,
+   "et0_mm": 146
+  }
+ },
+ "gap_filling": {
+  "method": "Empty days are filled and flagged in column 'filled_from' (raw values are never changed). 1) From the donor station MU120: temperatures + monthly mean offset, ET0 x monthly ratio (offset/ratio computed on days where both stations have data); rain copied as-is. 2) Days with no station data: temperature and rain from the NASA SMAP L4 2025 cell (data/daily.csv), effective rain = 0, ET0 linearly interpolated.",
+  "filled_days_by_source": {
+   "MU120 <- SMAP/interpolation": 32,
+   "MU128 <- MU120": 139,
+   "MU128 <- SMAP/interpolation": 7,
+   "MU130 <- MU120": 139,
+   "MU130 <- SMAP/interpolation": 7
+  }
+ },
+ "raw_files": [
+  "MU120_San_Javier_Santiago_de_la_Ribera_2023-2025.csv",
+  "MU128_Torre_Pacheco_2023-2025.csv",
+  "MU130_San_Javier_El_Mirador_2023-2025.csv"
+ ],
+ "raw_sha256": "6496c76f0655a89be56f6f74ebdd8d32879788bcf06a2a7bb7c0372c80bc315e"
+}

@@ -1,0 +1,78 @@
+{
+ "source": "ISRIC SoilGrids 2.0, https://soilgrids.org (CC BY 4.0), point queries via rest.isric.org",
+ "downloaded": "2026-11-14",
+ "depth": "0-30 cm, thickness-weighted mean of 0-5, 5-15, 15-30 cm",
+ "note": "SoilGrids values are 250 m model predictions; sample points per zone are illustrative (ASSUMPTION).",
+ "sample_points": [
+  {
+   "zone": "Coast",
+   "lat": 37.853,
+   "lon": -0.783,
+   "clay_pct": 34.9,
+   "ph_h2o": 7.983,
+   "sand_pct": 23.85,
+   "silt_pct": 41.183,
+   "soc_g_per_kg": 18.783
+  },
+  {
+   "zone": "Coast",
+   "lat": 37.866,
+   "lon": -0.776,
+   "clay_pct": 32.683,
+   "ph_h2o": 7.983,
+   "sand_pct": 24.683,
+   "silt_pct": 42.633,
+   "soc_g_per_kg": 16.05
+  },
+  {
+   "zone": "Town",
+   "lat": 37.845,
+   "lon": -0.805,
+   "clay_pct": 34.833,
+   "ph_h2o": 7.883,
+   "sand_pct": 27.25,
+   "silt_pct": 37.917,
+   "soc_g_per_kg": 14.833
+  },
+  {
+   "zone": "Town",
+   "lat": 37.828,
+   "lon": -0.812,
+   "clay_pct": 33.267,
+   "ph_h2o": 7.983,
+   "sand_pct": 28.033,
+   "silt_pct": 38.7,
+   "soc_g_per_kg": 17.083
+  },
+  {
+   "zone": "Inland farmland",
+   "lat": 37.8,
+   "lon": -0.88,
+   "clay_pct": 38.067,
+   "ph_h2o": 8.033,
+   "sand_pct": 23.567,
+   "silt_pct": 38.333,
+   "soc_g_per_kg": 14.333
+  },
+  {
+   "zone": "Inland farmland",
+   "lat": 37.825,
+   "lon": -0.84,
+   "clay_pct": 36.483,
+   "ph_h2o": 8.017,
+   "sand_pct": 22.817,
+   "silt_pct": 40.717,
+   "soc_g_per_kg": 14.117
+  }
+ ],
+ "units": {
+  "clay_pct": "% (mass)",
+  "sand_pct": "% (mass)",
+  "silt_pct": "% (mass)",
+  "ph_h2o": "pH in water",
+  "soc_g_per_kg": "g/kg soil organic carbon",
+  "field_capacity_m3m3": "m3/m3 (from soil_moisture_conversion.csv)"
+ },
+ "texture": "USDA texture triangle",
+ "missing_values": 0
+}

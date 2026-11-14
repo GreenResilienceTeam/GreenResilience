@@ -1,0 +1,4 @@
+zone,clay_pct,sand_pct,silt_pct,ph_h2o,soc_g_per_kg,texture,field_capacity_m3m3
+Coast,33.79,24.27,41.91,7.98,17.42,clay loam,0.32
+Town,34.05,27.64,38.31,7.93,15.96,clay loam,0.32
+Inland farmland,37.28,23.19,39.52,8.02,14.22,clay loam,0.32
