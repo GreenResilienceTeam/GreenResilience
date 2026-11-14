@@ -631,10 +631,8 @@
   // ---------- result panel ----------
   function renderPanel() {
     const c = S.crop, z = S.zone, p = crop(c), w = weekFor(c, z), r = res(c, z, w), [col] = level(r.matchPct), zz = zone(z);
-    const good = r.years.filter(v => v >= 70).length;
     let h = `<div class="hdr"><button data-act="info" data-info="match" aria-label="How is the match calculated?" style="padding:0">${ring(64, r.match, col, r.matchPct + "%", 56, 22, 6, 14)}</button>` +
-      `<div><div class="title">${esc(p.name)} <span>(${esc(z)})</span></div><span class="verdict" style="background:${col}">${VERDICT(r.matchPct)}</span>` +
-      `<div class="reliab">${r.years.map(v => `<i class="${v >= 70 ? "on" : ""}"></i>`).join("")} good in ${good} of ${D.years.length} years ${q("years", "the yearly result")}</div></div></div>`;
+      `<div><div class="title">${esc(p.name)} <span>(${esc(z)})</span></div><span class="verdict" style="background:${col}">${VERDICT(r.matchPct)}</span></div></div>`;
     if (PH[c]) h += `<figure class="photo"><img src="${PH[c].src}" alt="${esc(p.name)}"><figcaption>${esc(PH[c].credit)}</figcaption></figure>`;
     h += `<p class="desc">${esc(explain(p, r))}</p>`;
     if (r.warning) h += `<div class="banner">⚠ ${esc(r.warning)}</div>`;
