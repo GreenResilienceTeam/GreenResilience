@@ -19,7 +19,7 @@
 
   const S = { crop: D.crops.some(c => c.key === "tomato") ? "tomato" : D.crops[0].key, zone: "Inland farmland",
     iT: 0, iR: D.rain.indexOf(100), mode: "best", week: 0, zoom: 1, sheet: "half", list: false, lens: false, year: LAST_YEAR,
-    info: null, expert: false, allCrops: false };
+    info: null, expert: false, allCrops: false, page: "home" };
 
   // ---------- small helpers ----------
   const $ = id => document.getElementById(id);
@@ -405,6 +405,99 @@
     });
   }
 
+  // ---------- pages: Home, Map, Sources ----------
+  const PAGES = [["home", "Home"], ["map", "Map"], ["sources", "Sources"]];
+  const tabs = () => PAGES.map(([p, l]) => `<button class="${S.page === p ? "on" : ""}" data-act="page" data-page="${p}"${S.page === p ? ' aria-current="page"' : ""}>${l}</button>`).join("");
+  const topbar = () => `<div class="topbar"><div class="brand"><i></i>Crop Match</div><nav class="tabs" aria-label="Main">${tabs()}</nav></div>`;
+  const footer = () => `<div class="foot"><span>Crop Match · GreenResilience Team · NASA Space Apps Challenge, theme “Field Shift”</span><span>Data: NASA SMAP L4 · SiAR · SoilGrids · FAO</span></div>`;
+
+  function bestPerZone(z) {   // best crop of a zone on the measured climate, each crop at its own best date
+    const s0 = si(0, D.rain.indexOf(100));
+    return D.crops.map(c => { const k = K(c.key, z), w = D.best[k][s0], x = D.rows[k][s0][w]; return { c, w, pct: x[F.pct], m: x[F.match] }; })
+      .sort((a, b) => b.m - a.m)[0];
+  }
+
+  function renderHome() {
+    const pics = ["tomato", "olive", "melon", "lemon", "sea asparagus"].filter(k => PH[k]).slice(0, 3);
+    const zones = D.zones.map(z => {
+      const b = bestPerZone(z.name), [col] = level(b.pct), p = b.c;
+      const when = p.perennial ? "perennial" : `plant ${fmt(wDate(b.w))}`;
+      return `<button class="card zc" data-act="open" data-zone="${esc(z.name)}" data-crop="${esc(p.key)}">` +
+        (PH[p.key] ? `<img src="${PH[p.key].src}" alt="">` : "") +
+        `<div class="in"><div class="zn">${esc(z.name)}</div><div class="cn">${esc(p.name)}</div>` +
+        `<span class="verdict" style="background:${col}">${b.pct}% · ${VERDICT(b.pct)}</span>` +
+        `<div class="mini">${when} · soil pH ${z.soil.ph.toFixed(1)} · salinity ${z.ece} dS/m (estimate)</div><div class="go">Open on the map →</div></div></button>`;
+    }).join("");
+    $("home").innerHTML = `<div class="wrap">${topbar()}
+      <div class="hero"><div><span class="eyebrow">NASA Space Apps · Field Shift</span>
+        <h1>What to grow, where and when around San Pedro del Pinatar</h1>
+        <p class="lead">Crop Match combines NASA satellite data, local weather stations and soil maps to show farmers which crops fit each zone, the best planting date and how much irrigation they will need, today and in a warmer, drier climate.</p>
+        <div class="cta"><button class="btn primary" data-act="page" data-page="map">Open the map</button><button class="btn ghost" data-act="page" data-page="sources">Where the data comes from</button></div></div>
+        <div class="mosaic">${pics.map(k => `<img src="${PH[k].src}" alt="${esc(crop(k).name)}">`).join("")}</div></div>
+      <div class="h2">Best crop in each zone</div><p class="sub">From the model, on the weather of ${D.years[0]}–${LAST_YEAR}; each crop at its best planting date.</p>
+      <div class="grid3">${zones}</div>
+      <div class="h2">How it works</div><p class="sub">Three steps, about a minute.</p>
+      <div class="grid3">
+        <div class="card"><span class="num">1</span><h3>Pick a crop and a zone</h3><p>Choose from 10 crops and tap Coast, Town or Inland farmland on the map. The colour shows how well the crop fits.</p></div>
+        <div class="card"><span class="num">2</span><h3>Read the answer</h3><p>A verdict in words, the best months to plant, the harvest date and the irrigation in m³ per hectare. Tap “?” to see how it is calculated.</p></div>
+        <div class="card"><span class="num">3</span><h3>Try a Field Shift</h3><p>Make the climate up to 4 °C warmer and up to 40% drier, and see which crops still work.</p></div></div>
+      <div class="h2">What we look at</div><p class="sub">Four factors decide the score; one weak factor pulls the whole score down.</p>
+      <div class="grid4">
+        <div class="card factor"><b>🌡</b><div><h3>Temperature</h3><p>Days in the crop's comfort range, frost and heat days, and enough warmth to ripen.</p></div></div>
+        <div class="card factor"><b>💧</b><div><h3>Water</h3><p>Crop water use from daily evaporation, minus rain and the water already in the soil.</p></div></div>
+        <div class="card factor"><b>🧂</b><div><h3>Salinity</h3><p>How much yield the crop loses at the zone's soil salinity (FAO tolerance).</p></div></div>
+        <div class="card factor"><b>⚗</b><div><h3>Soil pH</h3><p>Local soils are calcareous (pH ≈ 8); crops that need acid soil score low.</p></div></div></div>
+      <div class="h2">Built on open data</div><p class="sub">Satellite, station and soil data, all public. <button class="linkbtn" data-act="page" data-page="sources">See all sources →</button></p>
+      <div class="chips2"><span>NASA SMAP L4 · soil moisture</span><span>SiAR · weather stations ${D.years[0]}–${LAST_YEAR}</span><span>ISRIC SoilGrids · soil</span><span>FAO-56 · crop water</span><span>FAO · salt tolerance</span><span>OpenStreetMap · map</span><span>Sentinel-2 · satellite view</span></div>
+      ${footer()}</div>`;
+  }
+
+  function renderSources() {
+    const ref = (text, url, note) => `<li>${text}${url ? ` <a href="${url}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a>` : ""}${note ? `<small>${note}</small>` : ""}</li>`;
+    const photos = Object.entries(PH).map(([k, v]) => ref(`${esc(crop(k) ? crop(k).name : k)}: ${esc(v.credit.replace(/^Photo: /, ""))}.`, v.source, "")).join("");
+    $("sources").innerHTML = `<div class="wrap">${topbar()}
+      <div class="h2">Sources</div><p class="sub">Where every number in Crop Match comes from. All data is public; only small local extracts are used.</p>
+      <div class="bib">
+        <div class="card"><h3>Satellite data (NASA)</h3><ol>
+          ${ref("Reichle, R. et al. <i>SMAP L4 Global 3-hourly 9 km EASE-Grid Surface and Root Zone Soil Moisture Geophysical Data</i>, Version 8 (SPL4SMGP). NASA National Snow and Ice Data Center DAAC.", "https://www.earthdata.nasa.gov/data/catalog/nsidc-cprd-spl4smgp-008-0", "Root-zone soil moisture, natural evaporation (ETa), rain and temperature of the 9 km cell over San Pedro del Pinatar.")}
+        </ol></div>
+        <div class="card"><h3>Weather stations</h3><ol>
+          ${ref("Ministerio de Agricultura, Pesca y Alimentación (MAPA). <i>SiAR – Sistema de Información Agroclimática para el Regadío</i>.", "https://servicio.mapa.gob.es/siarweb/", `Daily min / mean / max temperature, rain, effective rain and reference evaporation ET₀, ${D.years[0]}–${LAST_YEAR}. Stations MU120 San Javier (Santiago de la Ribera), MU130 San Javier (El Mirador), MU128 Torre Pacheco.`)}
+        </ol></div>
+        <div class="card"><h3>Soil</h3><ol>
+          ${ref("Poggio, L. et al. (2021). SoilGrids 2.0: producing soil information for the globe with quantified spatial uncertainty. <i>SOIL</i> 7, 217–240. ISRIC – World Soil Information.", "https://soilgrids.org", "Clay, silt, sand, soil pH and organic carbon, 0–30 cm, at sample points in each zone (250 m grid).")}
+          ${ref("Soil salinity of the zones: model estimates within the 2–10 dS/m reported for irrigated soils of Campo de Cartagena (team reference).", "", "")}
+        </ol></div>
+        <div class="card"><h3>Crop requirements</h3><ol>
+          ${ref("GreenResilience Team biologists. Crop table: temperature range, water need, salinity, planting months for 10 crops.", "", "")}
+          ${ref("Allen, R.G., Pereira, L.S., Raes, D. &amp; Smith, M. (1998). <i>Crop evapotranspiration – Guidelines for computing crop water requirements</i>. FAO Irrigation and Drainage Paper 56.", "https://www.fao.org/4/x0490e/x0490e00.htm", "Crop coefficients Kc, growth stages, root depth and allowed depletion.")}
+          ${ref("Tanji, K.K. &amp; Kielen, N.C. (2002). <i>Agricultural drainage water management in arid and semi-arid areas</i>. FAO Irrigation and Drainage Paper 61.", "https://www.fao.org/4/y4263e/y4263e00.htm", "Salt tolerance thresholds and slopes (after Maas &amp; Hoffman).")}
+          ${ref("Maas, E.V. &amp; Hoffman, G.J. (1977). Crop salt tolerance – current assessment. <i>Journal of the Irrigation and Drainage Division</i> 103(2), 115–134.", "", "The yield-loss formula used for salinity.")}
+          ${ref("Glenn, E.P. et al. (1997). Water requirements for cultivating <i>Salicornia bigelovii</i> with seawater on sand in a coastal desert environment. <i>Journal of Arid Environments</i>.", "https://experts.arizona.edu/en/publications/water-requirements-for-cultivating-salicornia-bigelovii-torr-with/", "")}
+          ${ref("Water requirement and crop coefficient of two <i>Salicornia</i> species in Yazd. <i>Water Research in Agriculture</i> (AREEO).", "https://journals.areeo.ac.ir/article_122582.html?lang=en", "Sea asparagus crop coefficients.")}
+          ${ref("Growing degree days: Midwestern Regional Climate Center (Purdue University).", "https://mrcc.purdue.edu/resources/growing-degree-day-description", "Base temperatures; heat needed to ripen (estimates, to be checked by the biologists).")}
+        </ol></div>
+        <div class="card"><h3>Map and imagery</h3><ol>
+          ${ref("© OpenStreetMap contributors (ODbL).", "https://www.openstreetmap.org/copyright", "")}
+          ${ref("OpenFreeMap vector tiles, based on OpenMapTiles.", "https://openfreemap.org", "")}
+          ${ref("MapLibre GL JS.", "https://maplibre.org", "")}
+          ${ref("Sentinel-2 cloudless 2023 by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2023), CC BY-NC-SA 4.0.", "https://s2maps.eu", "")}
+        </ol></div>
+        <div class="card"><h3>Crop photos</h3><p class="sub" style="margin:0 0 8px">Found via Openverse, used under their Creative Commons licences, cropped.</p><ol>${photos}</ol></div>
+      </div>${footer()}</div>`;
+  }
+
+  function setPage(p) {
+    S.page = p;
+    document.body.classList.remove("page-home", "page-map", "page-sources");
+    document.body.classList.add("page-" + p);
+    if (p === "home") renderHome();
+    if (p === "sources") renderSources();
+    $("mapnav").innerHTML = tabs();
+    if (p === "home" || p === "sources") { const el = $(p); el.scrollTop = 0; }
+    if (p === "map" && REAL) { MAP.resize(); fitReal(false); }
+  }
+
   // ---------- top bar ----------
   function renderTop() {
     $("cropchip").textContent = crop(S.crop).name;
@@ -584,6 +677,8 @@
     const el = e.target.closest("[data-act]");
     if (!el) { if (S.list) { S.list = false; renderTop(); } return; }
     const act = el.dataset.act;
+    if (act === "page") { setPage(el.dataset.page); return; }
+    if (act === "open") { S.crop = el.dataset.crop; S.zone = el.dataset.zone; S.mode = "best"; S.info = null; render(); setPage("map"); return; }
     if (act === "list") { S.list = !S.list; S.lens = false; renderTop(); return; }
     if (act === "crop") { S.crop = el.dataset.crop; S.list = false; S.info = null; }
     else if (act === "zone") { S.zone = el.dataset.zone; S.list = false; }
@@ -635,6 +730,7 @@
 
   applySheet();
   render();
+  setPage("home");
   initRealMap();
   window.__cropMatch = { res, explain, crop, D, S, map: () => MAP };   // used by the checks
 })();

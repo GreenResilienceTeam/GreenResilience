@@ -13,6 +13,11 @@
 </head>
 <body>
 <div id="app">
+  <!-- Pages: Home and Sources cover the map; the map keeps loading underneath (built by ui.js) -->
+  <section id="home" class="page" aria-label="Home"></section>
+  <section id="sources" class="page" aria-label="Sources"></section>
+  <!-- Tabs on the map (wide screens) -->
+  <nav id="mapnav" class="tabs" aria-label="Main"></nav>
   <!-- Map: real map when it loads, the illustrated SVG map otherwise (built by ui.js) -->
   <div id="realmap"></div>
   <svg id="map" aria-label="Map of San Pedro del Pinatar with the three model zones"></svg>
@@ -30,6 +35,7 @@
 
   <!-- Map controls (design: zoom, locate, "Lenses") -->
   <div id="controls">
+    <button class="ctl home-btn" data-act="page" data-page="home" aria-label="Home">⌂</button>
     <button class="ctl" data-act="zoom" aria-label="Zoom in">+</button>
     <button class="ctl" data-act="locate" aria-label="Reset map view">◎</button>
     <button class="ctl sat" data-act="sat" id="satbtn" aria-label="Satellite view" aria-pressed="false">🛰</button>
