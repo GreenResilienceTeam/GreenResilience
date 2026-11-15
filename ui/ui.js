@@ -172,7 +172,7 @@
     const T_ = L(), M = MON(), dd = D.daily[z], rain = Array(12).fill(0), et0 = Array(12).fill(0), eta = Array(12).fill(0);
     dd.rain.forEach((v, i) => { const m = addDays(new Date(dd.start + "T00:00:00Z"), i).getUTCMonth(); rain[m] += v; et0[m] += dd.et0[i]; });
     const ny = D.years.length, sm0 = new Date(D.smap.start + "T00:00:00Z");
-    D.smap.eta.forEach((v, i) => { eta[addDays(sm0, i).getUTCMonth()] += v; });
+    D.smap.eta.forEach((v, i) => { eta[addDays(sm0, i).getUTCMonth()] += v / ny; });   // mean of the SMAP years
     const R = rain.map(v => v / ny * rainF()), E = et0.map(v => v / ny * (1 + D.et0_per_c * warm()));
     const max = Math.max(...R, ...E, ...eta) * 1.08, W = 412, H = 110, x = m => 16 + m * 33, y = v => H - v / max * (H - 8);
     let s = `<svg class="chart" viewBox="0 0 ${W} ${H + 16}" role="img" aria-label="${T_.rvAria}">`;
@@ -180,8 +180,8 @@
     R.forEach((v, m) => { s += `<rect x="${x(m) - 9}" y="${y(v)}" width="18" height="${H - y(v)}" rx="4" fill="${C.sea}"><title>${T_.rvRainTip(M[m], v.toFixed(0))}</title></rect>` + T(x(m), H + 12, M[m][0].toUpperCase(), { anchor: "middle" }); });
     const line = (arr, col, dash, label) => `<polyline fill="none" stroke="${col}" stroke-width="2" ${dash ? `stroke-dasharray="${dash}"` : ""} points="${arr.map((v, m) => `${x(m)},${y(v).toFixed(1)}`).join(" ")}"><title>${label}</title></polyline>` +
       arr.map((v, m) => `<circle cx="${x(m)}" cy="${y(v).toFixed(1)}" r="2.5" fill="${col}"><title>${M[m]}: ${label} ${v.toFixed(0)} mm</title></circle>`).join("");
-    s += line(E, C.amber, "", T_.rvEt0Tip) + line(eta, C.olive, "4 3", T_.rvEtaTip);
-    return s + "</svg>" + `<div class="legend"><span>${dot(C.sea)}${T_.rvRain(D.years[0], LAST_YEAR)}</span><span>${dot(C.amber)}${T_.rvEt0}</span><span>${dot(C.olive)}${T_.rvEta}</span></div>`;
+    s += line(E, C.amber, "", T_.rvEt0Tip) + line(eta, C.olive, "4 3", T_.rvEtaTip(D.years[0], LAST_YEAR));
+    return s + "</svg>" + `<div class="legend"><span>${dot(C.sea)}${T_.rvRain(D.years[0], LAST_YEAR)}</span><span>${dot(C.amber)}${T_.rvEt0}</span><span>${dot(C.olive)}${T_.rvEta(D.years[0], LAST_YEAR)}</span></div>`;
   }
 
   function weeksChart(c, z, wSel) {   // match % for every planting week (tap = choose that date)

@@ -9,3 +9,6 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# Raw SMAP downloads (derived daily files in data/yearly are kept)
+data/raw/smap/

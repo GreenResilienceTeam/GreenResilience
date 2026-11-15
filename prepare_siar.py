@@ -101,7 +101,8 @@ def raw_hash(files):
 
 def main():
     files = sorted(RAW_DIR.glob("MU*.csv"))
-    fingerprint = raw_hash(files)
+    smap_file = DATA_DIR / "yearly" / "smap_daily.csv"          # used to fill days with no station data
+    fingerprint = raw_hash(files + [smap_file])
     if OUT_META.exists() and json.loads(OUT_META.read_text()).get("raw_sha256") == fingerprint:
         print("SiAR data unchanged, using cache:", OUT_CSV)
         return

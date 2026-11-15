@@ -1,0 +1,42 @@
+{
+ "source": "NASA SMAP L4 Global 3-hourly 9 km EASE-Grid Surface and Root Zone Soil Moisture Geophysical Data (SPL4SMGP v008), one cell over San Pedro del Pinatar",
+ "created": "2026-11-15",
+ "date_range": [
+  "2023-01-01",
+  "2025-12-31"
+ ],
+ "units": {
+  "temp_*_C": "degC (from temp_C, lowest model layer)",
+  "precip_mm": "mm/day",
+  "eta_mm": "mm/day (actual ET, rain-fed cell)",
+  "sm_surface": "m3/m3 (0-5 cm)",
+  "sm_rootzone": "m3/m3 (0-100 cm)",
+  "intervals": "3-hour intervals present"
+ },
+ "conversion": "flux kg m-2 s-1 (3-hourly mean) -> daily mean x 86400 s; 1 kg m-2 = 1 mm",
+ "data_issues": {
+  "duplicated_time_stamps_averaged": 16,
+  "days_with_fewer_than_8_intervals": 4,
+  "days_with_no_data_interpolated": 0
+ },
+ "yearly": {
+  "2023": {
+   "rain_mm": 280.984,
+   "eta_mm": 307.199,
+   "sm_rootzone": 0.178,
+   "temp_C": 19.174
+  },
+  "2024": {
+   "rain_mm": 272.642,
+   "eta_mm": 213.638,
+   "sm_rootzone": 0.163,
+   "temp_C": 19.298
+  },
+  "2025": {
+   "rain_mm": 500.4,
+   "eta_mm": 362.311,
+   "sm_rootzone": 0.191,
+   "temp_C": 19.378
+  }
+ }
+}

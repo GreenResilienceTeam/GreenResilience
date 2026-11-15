@@ -850,7 +850,7 @@ MU120,2025-04-27,17.38,18.96,16.19,0.0,0.0,5.09,"SMAP L4 2025 (temp, rain) + int
 MU120,2025-04-28,16.52,17.6,15.22,0.01,0.0,5.13,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU120,2025-04-29,16.68,17.32,15.91,0.0,0.0,5.17,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU120,2025-04-30,17.2,18.04,16.13,0.0,0.0,5.2,"SMAP L4 2025 (temp, rain) + interpolated ET0"
-MU120,2025-05-01,17.97,19.89,16.71,0.01,0.0,5.24,"SMAP L4 2025 (temp, rain) + interpolated ET0"
+MU120,2025-05-01,17.97,19.89,16.71,0.0,0.0,5.24,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU120,2025-05-02,18.72,21.53,16.53,0.13,0.0,5.28,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU120,2025-05-03,18.5,20.55,16.97,0.42,0.0,5.32,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU120,2025-05-04,20.75,27.28,13.08,0.0,0.0,5.36,
@@ -1041,7 +1041,7 @@ MU120,2025-11-04,17.0,22.38,11.51,0.0,0.0,1.63,
 MU120,2025-11-05,18.95,20.65,17.28,0.01,0.0,1.66,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU120,2025-11-06,18.51,20.32,17.1,0.74,0.0,1.69,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU120,2025-11-07,17.57,20.03,15.25,0.05,0.0,1.72,"SMAP L4 2025 (temp, rain) + interpolated ET0"
-MU120,2025-11-08,18.1,20.25,16.48,0.23,0.0,1.75,"SMAP L4 2025 (temp, rain) + interpolated ET0"
+MU120,2025-11-08,18.1,20.25,16.48,0.22,0.0,1.75,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU120,2025-11-09,16.3,19.5,12.5,0.0,0.0,1.78,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU120,2025-11-10,17.31,20.68,14.85,0.0,0.0,1.81,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU120,2025-11-11,17.16,19.79,15.02,0.0,0.0,1.84,"SMAP L4 2025 (temp, rain) + interpolated ET0"
@@ -1946,7 +1946,7 @@ MU128,2025-04-27,17.38,18.96,16.19,0.0,0.0,5.02,"SMAP L4 2025 (temp, rain) + int
 MU128,2025-04-28,16.52,17.6,15.22,0.01,0.0,5.04,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU128,2025-04-29,16.68,17.32,15.91,0.0,0.0,5.07,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU128,2025-04-30,17.2,18.04,16.13,0.0,0.0,5.09,"SMAP L4 2025 (temp, rain) + interpolated ET0"
-MU128,2025-05-01,17.97,19.89,16.71,0.01,0.0,5.11,"SMAP L4 2025 (temp, rain) + interpolated ET0"
+MU128,2025-05-01,17.97,19.89,16.71,0.0,0.0,5.11,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU128,2025-05-02,18.72,21.53,16.53,0.13,0.0,5.14,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU128,2025-05-03,18.5,20.55,16.97,0.42,0.0,5.16,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU128,2025-05-04,20.88,28.27,13.11,0.0,0.0,5.18,MU120 (bias-corrected)
@@ -3042,7 +3042,7 @@ MU130,2025-04-27,17.38,18.96,16.19,0.0,0.0,5.31,"SMAP L4 2025 (temp, rain) + int
 MU130,2025-04-28,16.52,17.6,15.22,0.01,0.0,5.33,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU130,2025-04-29,16.68,17.32,15.91,0.0,0.0,5.34,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU130,2025-04-30,17.2,18.04,16.13,0.0,0.0,5.36,"SMAP L4 2025 (temp, rain) + interpolated ET0"
-MU130,2025-05-01,17.97,19.89,16.71,0.01,0.0,5.37,"SMAP L4 2025 (temp, rain) + interpolated ET0"
+MU130,2025-05-01,17.97,19.89,16.71,0.0,0.0,5.37,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU130,2025-05-02,18.72,21.53,16.53,0.13,0.0,5.38,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU130,2025-05-03,18.5,20.55,16.97,0.42,0.0,5.4,"SMAP L4 2025 (temp, rain) + interpolated ET0"
 MU130,2025-05-04,20.47,27.25,12.89,0.0,0.0,5.41,MU120 (bias-corrected)

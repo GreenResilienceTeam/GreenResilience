@@ -1,7 +1,7 @@
 {
  "source": "SiAR - Sistema de Informacion Agroclimatica para el Regadio (MAPA, Spain), https://servicio.mapa.gob.es/siarweb/",
  "data_type": "daily",
- "downloaded": "2026-11-14",
+ "downloaded": "2026-11-15",
  "date_range": [
   "2023-01-01",
   "2025-12-31"
@@ -72,5 +72,5 @@
   "MU128_Torre_Pacheco_2023-2025.csv",
   "MU130_San_Javier_El_Mirador_2023-2025.csv"
  ],
- "raw_sha256": "6496c76f0655a89be56f6f74ebdd8d32879788bcf06a2a7bb7c0372c80bc315e"
+ "raw_sha256": "1402b5e81d6574aebb6d0671383c6da3a85c0b79ac2faebe2e929ee0fd2cebc2"
 }

@@ -65,14 +65,18 @@ def zone_weather(stations):
     """{year: daily weather of that year + the next one} for the mean of the given stations.
 
     Two consecutive years let a growing window cross New Year. After the last year the same
-    year is repeated (ASSUMPTION). Root-zone soil moisture comes from NASA SMAP L4 (2025),
-    matched by calendar day.
+    year is repeated (ASSUMPTION). Root-zone soil moisture comes from NASA SMAP L4 of the same
+    day (2023-2025); days after the last year reuse the last year's same calendar day.
     """
     s = load_siar()
     cols = ["t_mean_C", "t_max_C", "t_min_C", "precip_mm", "precip_eff_mm", "et0_mm"]
     daily = s[s["station"].isin(stations)].groupby("date")[cols].mean()
     smap = load_daily()
-    sm = dict(zip(smap["time"].dt.strftime("%m-%d"), smap["sm_rootzone"]))
+    sm = dict(zip(smap["time"].dt.strftime("%Y-%m-%d"), smap["sm_rootzone"]))
+    last = YEARS[-1]
+    def sm_of(d):   # SMAP of that day; after the last year: same day of the last year
+        key = d.strftime("%Y-%m-%d") if d.year <= last else f"{last}-{d.strftime('%m-%d')}"
+        return sm.get(key, sm.get(key[:8] + "28"))
     out = {}
     for y in YEARS:
         nxt = y + 1 if y + 1 in YEARS else y
@@ -82,7 +86,7 @@ def zone_weather(stations):
                   "tmean": w["t_mean_C"].to_numpy(), "tmax": w["t_max_C"].to_numpy(),
                   "tmin": w["t_min_C"].to_numpy(), "rain": w["precip_mm"].to_numpy(),
                   "peff": w["precip_eff_mm"].to_numpy(), "et0": w["et0_mm"].to_numpy(),
-                  "sm": np.array([sm.get(d.strftime("%m-%d"), sm["02-28"]) for d in dates])}
+                  "sm": np.array([sm_of(d) for d in dates])}
     return out
 
 

@@ -38,19 +38,22 @@ already in `data/`.
 
 ## Data sources
 
-- **Climate:** NASA SMAP L4 Global 3-hourly 9 km Surface and Root Zone Soil Moisture
-  Geophysical Data (**SPL4SMGP v008**), one grid point near San Pedro del Pinatar,
-  aggregated to daily values for 2025 (`data/daily.csv`).
-- **Crop requirements:** our team's biologists' crop table (`data/Biology_Data_Table_-_Sheet1.csv`).
-  Radish and orange temperature optima come from FAO EcoCrop.
+- **NASA SMAP L4** Global 3-hourly 9 km Surface and Root Zone Soil Moisture Geophysical Data
+  (**SPL4SMGP v008**), one cell over San Pedro del Pinatar, 2023–2025: root-zone soil moisture
+  (water in the soil at planting), natural ET, rain and temperature (`prepare_smap.py` →
+  `data/yearly/smap_daily.csv`; `data/daily.csv` is the first 2025 extract).
+- **SiAR weather stations** (Spanish Ministry of Agriculture) MU120, MU130, MU128, daily 2023–2025:
+  temperature, rain, effective rain, reference evaporation ET₀ (`prepare_siar.py`).
+- **ISRIC SoilGrids**: soil texture, pH and organic carbon per zone (`prepare_soil.py`).
+- **Crop requirements:** our team's biologists' crop table (`data/Biology_Data_Table_-_Sheet1.csv`),
+  plus FAO-56 crop coefficients, degree-days and pH ranges in `data/crop_params_extra.csv`.
 - **Salinity tolerance:** FAO Irrigation and Drainage Paper (threshold + slope, Maas–Hoffman),
   in `data/crops_extra.csv`.
-- **Soil field capacity** by texture (`data/soil_moisture_conversion.csv`, reference only).
 
 ## Limitations
 
-SMAP has a 9 km resolution, so a single grid cell covers all zones and the differences
-between zones are model assumptions. Soil salinity cannot be measured by satellite, so
-the zone ECe values are estimates; irrigated soils in Campo de Cartagena have been
-measured at 2–10 dS/m. The climate data covers 2025 only, and crop cycle lengths are
-approximate.
+SMAP has a 9 km resolution, so one grid cell covers all zones; it is used for soil moisture
+and natural ET, not for differences between zones. Soil salinity cannot be measured by
+satellite, so the zone ECe values are estimates; irrigated soils in Campo de Cartagena have
+been measured at 2–10 dS/m. Weather covers 2023–2025 (three years), and crop cycle lengths
+and some crop parameters are approximate.

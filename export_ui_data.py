@@ -74,11 +74,10 @@ def main():
         out["daily"][name] = {"start": str(w.index[0].date()), "tmean": w["t_mean_C"].round(1).tolist(),
                               "tmax": w["t_max_C"].round(1).tolist(), "tmin": w["t_min_C"].round(1).tolist(),
                               "rain": w["precip_mm"].round(1).tolist(), "et0": w["et0_mm"].round(2).tolist()}
-    # NASA SMAP L4 2025 (one 9 km cell): rain, root-zone moisture, actual ET of the cell
+    # NASA SMAP L4 2023-2025 (one 9 km cell): rain, root-zone moisture, actual ET of the cell
     smap = load_daily()
-    eta = pd.read_csv(DATA_DIR / "yearly" / "smap_eta_daily_2025.csv")
     out["smap"] = {"start": str(smap["time"].iloc[0].date()), "rain": smap["precip_mm"].round(1).tolist(),
-                   "sm_rootzone": smap["sm_rootzone"].round(3).tolist(), "eta": eta["eta_mm"].round(2).tolist()}
+                   "sm_rootzone": smap["sm_rootzone"].round(3).tolist(), "eta": smap["eta_mm"].round(2).tolist()}
 
     path = DATA_DIR / "ui_data.json"
     path.write_text(json.dumps(out, separators=(",", ":")))

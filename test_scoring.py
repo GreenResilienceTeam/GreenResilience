@@ -85,5 +85,12 @@ blue = best_planting("blueberry", "Town")
 check("blueberry limited by calcareous soil pH", blue["ph_score"] == 0.3 and "soil pH" in blue["explanation"],
       f"(pH factor {blue['ph_score']}, {blue['match']:.2f})")
 check("every SiAR year is scored", sorted(t0["yearly_match"]) == YEARS, f"({sorted(t0['yearly_match'])})")
+from config import load_daily
+from scoring import zone_weather
+smap = load_daily().set_index("time")["sm_rootzone"]
+w = zone_weather(("MU130",))
+same_day = [abs(w[y]["sm"][0] - smap[f"{y}-01-01"]) < 1e-9 for y in YEARS]
+check("NASA SMAP soil moisture comes from the same year", all(same_day) and len(set(round(w[y]["sm"][0], 4) for y in YEARS)) == len(YEARS),
+      "(1 Jan: " + ", ".join(f"{y} {w[y]['sm'][0]:.3f}" for y in YEARS) + " m3/m3)")
 
 print(f"\n{'ALL TESTS PASSED' if failures == 0 else f'{failures} TEST(S) FAILED'}")

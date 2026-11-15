@@ -17,10 +17,9 @@ def find_file(pattern):
 
 
 def load_daily():
-    """NASA SMAP L4 daily point series for 2025 (first row 2024-12-31 is a partial day -> dropped)."""
-    df = pd.read_csv(find_file("daily.csv"), parse_dates=["time"])
-    df = df.iloc[1:].reset_index(drop=True)
-    return df
+    """NASA SMAP L4 daily series of the 9 km cell, 2023-2025 (made by prepare_smap.py from the
+    3-hourly data): temperature, rain, soil moisture, natural ET. (data/daily.csv = the first 2025 extract.)"""
+    return pd.read_csv(DATA_DIR / "yearly" / "smap_daily.csv", parse_dates=["time"])
 
 
 # ZONES. Weather comes from SiAR stations (measured); salinity and the urban offset are
