@@ -21,6 +21,12 @@
 
   // ---------- language: English or Spanish (texts in ui/i18n.js) ----------
   const LANGS = ["en", "es"];
+  function initialTheme() {   // the visitor's last choice, else the system setting
+    let saved = null;
+    try { saved = localStorage.getItem("gr-theme"); } catch (e) { /* storage blocked */ }
+    if (saved === "dark" || saved === "light") return saved;
+    return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
   function initialLang() {   // the visitor's last choice, else the browser language
     let saved = null;
     try { saved = localStorage.getItem("gr-lang"); } catch (e) { /* storage blocked */ }
@@ -30,8 +36,9 @@
 
   const S = { crop: D.crops.some(c => c.key === "tomato") ? "tomato" : D.crops[0].key, zone: "Inland farmland",
     iT: 0, iR: D.rain.indexOf(100), mode: "best", week: 0, zoom: 1, sheet: "half", list: false, lens: false, year: LAST_YEAR,
-    info: null, expert: false, allCrops: false, page: "home", lang: initialLang(),
+    info: null, expert: false, allCrops: false, page: "home", lang: initialLang(), theme: initialTheme(),
     view: "crop", seasonOther: false };   // view: "crop" card or "season" catalogue
+  document.documentElement.dataset.theme = S.theme;
 
   // ---------- small helpers ----------
   const $ = id => document.getElementById(id);
@@ -277,24 +284,35 @@
   let MAP = null, REAL = false, SATON = false;
   const MARKERS = {};
 
+  // map colours for the light and dark theme
+  const MAPPAL = {
+    light: { bg: "#ece4d2", water: "#84abc8", bld: "#ddd2b8", bldLine: "#cfc3a6", sand: "#efe2c2", green: "#d9dcb6", urban: "#e4d9c1",
+      border: "#c2b79c", rail: "#cfc4aa", road: "#fbf8f0", waterText: "#1f4a63", text: "#2b3a2f", ink: "#2b3a2f" },
+    dark: { bg: "#1b231e", water: "#24404f", bld: "#2b342e", bldLine: "#38433b", sand: "#38352a", green: "#233027", urban: "#222a24",
+      border: "#4a574d", rail: "#424e45", road: "#36413a", waterText: "#9cc3dc", text: "#d6dfcc", ink: "#e3e9d8" },
+  };
+  const zoneLineColor = () => ["case", ["==", ["get", "on"], 1], MAPPAL[S.theme].ink, ["get", "color"]];
   function restyle() {   // recolour the OpenStreetMap style with the design palette
+    const M = MAPPAL[S.theme];
     const set = (id, prop, val) => { try { MAP.setPaintProperty(id, prop, val); } catch (e) { /* layer without this property */ } };
     MAP.getStyle().layers.forEach(l => {
       const id = l.id.toLowerCase();
-      if (l.type === "background") set(l.id, "background-color", "#ece4d2");
+      if (l.type === "background") set(l.id, "background-color", M.bg);
       else if (l.type === "fill") {
-        if (/water|ocean|sea|lake|river|basin/.test(id)) set(l.id, "fill-color", "#84abc8");
-        else if (/building/.test(id)) { set(l.id, "fill-color", "#ddd2b8"); set(l.id, "fill-outline-color", "#cfc3a6"); }
-        else if (/sand|beach/.test(id)) set(l.id, "fill-color", "#efe2c2");
-        else if (/park|wood|forest|grass|landcover|farm|meadow|vegetation|scrub|orchard|vineyard/.test(id)) { set(l.id, "fill-color", "#d9dcb6"); set(l.id, "fill-opacity", 0.7); }
-        else if (/residential|landuse|urban|industrial|commercial/.test(id)) set(l.id, "fill-color", "#e4d9c1");
+        if (/water|ocean|sea|lake|river|basin/.test(id)) set(l.id, "fill-color", M.water);
+        else if (/building/.test(id)) { set(l.id, "fill-color", M.bld); set(l.id, "fill-outline-color", M.bldLine); }
+        else if (/sand|beach/.test(id)) set(l.id, "fill-color", M.sand);
+        else if (/park|wood|forest|grass|landcover|farm|meadow|vegetation|scrub|orchard|vineyard/.test(id)) { set(l.id, "fill-color", M.green); set(l.id, "fill-opacity", 0.7); }
+        else if (/residential|landuse|urban|industrial|commercial/.test(id)) set(l.id, "fill-color", M.urban);
       } else if (l.type === "line") {
-        if (/water|river|stream|canal/.test(id)) set(l.id, "line-color", "#84abc8");
-        else if (/boundary|admin/.test(id)) set(l.id, "line-color", "#c2b79c");
-        else if (/rail/.test(id)) set(l.id, "line-color", "#cfc4aa");
-        else if (/road|highway|street|path|motorway|trunk|primary|secondary|tertiary|minor|service|track|bridge|tunnel|aeroway/.test(id)) set(l.id, "line-color", "#fbf8f0");
+        if (/water|river|stream|canal/.test(id)) set(l.id, "line-color", M.water);
+        else if (/boundary|admin/.test(id)) set(l.id, "line-color", M.border);
+        else if (/rail/.test(id)) set(l.id, "line-color", M.rail);
+        else if (/road|highway|street|path|motorway|trunk|primary|secondary|tertiary|minor|service|track|bridge|tunnel|aeroway/.test(id)) set(l.id, "line-color", M.road);
+      } else if (l.type === "symbol" && /shield/.test(id)) {   // road number plates: dark text on a light plate, dimmed at night
+        set(l.id, "text-color", "#2b3a2f"); set(l.id, "icon-opacity", S.theme === "dark" ? 0.55 : 1);
       } else if (l.type === "symbol" && l.layout && l.layout["text-field"]) {
-        set(l.id, "text-color", /water|sea|ocean/.test(id) ? "#1f4a63" : "#2b3a2f"); set(l.id, "text-halo-color", "#ece4d2");
+        set(l.id, "text-color", /water|sea|ocean/.test(id) ? M.waterText : M.text); set(l.id, "text-halo-color", M.bg);
       }
     });
   }
@@ -317,7 +335,7 @@
     const before = layers[lastFill + 1] ? layers[lastFill + 1].id : undefined;
     MAP.addSource("zones", { type: "geojson", data: zoneFeatures() });
     MAP.addLayer({ id: "zones-fill", type: "fill", source: "zones", paint: { "fill-color": ["get", "color"], "fill-opacity": zoneOpacity(false) } }, before);
-    MAP.addLayer({ id: "zones-line", type: "line", source: "zones", paint: { "line-color": ["case", ["==", ["get", "on"], 1], "#2b3a2f", ["get", "color"]], "line-width": ["case", ["==", ["get", "on"], 1], 3, 2.2], "line-dasharray": [3, 1.5] } }, before);
+    MAP.addLayer({ id: "zones-line", type: "line", source: "zones", paint: { "line-color": zoneLineColor(), "line-width": ["case", ["==", ["get", "on"], 1], 3, 2.2], "line-dasharray": [3, 1.5] } }, before);
     // the sea goes on top of the zones, so it trims the approximate zone shapes at the shore
     layers.filter(l => l.type === "fill" && /water/.test(l.id)).forEach(l => MAP.moveLayer(l.id, before));
     MAP.on("click", "zones-fill", e => selectZone(e.features[0].properties.name));
@@ -428,6 +446,7 @@
     document.querySelectorAll("[data-i18n-aria]").forEach(el => { el.setAttribute("aria-label", L()[el.dataset.i18nAria]); });
     const lb = document.querySelector(".lang-btn");
     lb.textContent = S.lang === "en" ? "ES" : "EN"; lb.setAttribute("aria-label", L().langLabel);
+    document.querySelectorAll(".themebtn").forEach(b => b.setAttribute("aria-label", themeLabel()));
   }
   function setLang(l) {
     S.lang = l;
@@ -437,8 +456,22 @@
 
   // ---------- pages: Home, Map, Sources ----------
   const PAGES = ["home", "map", "sources"];
-  const tabs = () => `<span class="seg"><i class="thumb" aria-hidden="true"></i>` +
-    PAGES.map(p => `<button class="${S.page === p ? "on" : ""}" data-act="page" data-page="${p}"${S.page === p ? ' aria-current="page"' : ""}>${L().tabs[p]}</button>`).join("") + `</span>`;
+  const SUN = `<svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.3 4.3l1.6 1.6M18.1 18.1l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.3 19.7l1.6-1.6M18.1 5.9l1.6-1.6"/></svg>`;
+  const MOON = `<svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg>`;
+  const themeLabel = () => S.theme === "dark" ? L().themeLight : L().themeDark;
+  const themeBtn = () => `<button class="themebtn" data-act="theme" aria-label="${themeLabel()}" aria-pressed="${S.theme === "dark"}">${SUN}${MOON}</button>`;
+  const navHTML = (p = S.page) => themeBtn() + tabs(p) + langSwitch();
+  function setTheme(t) {
+    S.theme = t;
+    try { localStorage.setItem("gr-theme", t); } catch (e) { /* storage blocked: the choice lasts for this visit */ }
+    const root = document.documentElement;
+    root.classList.add("theming"); root.dataset.theme = t;   // colours fade over for a moment
+    setTimeout(() => root.classList.remove("theming"), 450);
+    document.querySelectorAll(".themebtn").forEach(b => { b.setAttribute("aria-label", themeLabel()); b.setAttribute("aria-pressed", t === "dark"); });
+    if (REAL) { restyle(); try { MAP.setPaintProperty("zones-line", "line-color", zoneLineColor()); } catch (e) { /* zones not added yet */ } }
+  }
+  const tabs = (cur = S.page) => `<span class="seg"><i class="thumb" aria-hidden="true"></i>` +
+    PAGES.map(p => `<button class="${cur === p ? "on" : ""}" data-act="page" data-page="${p}"${cur === p ? ' aria-current="page"' : ""}>${L().tabs[p]}</button>`).join("") + `</span>`;
   const THUMB = {};   // where each menu slider (pages, language) was last drawn, so a change slides it from there
   function slideTabs(animate = true) {
     for (const kind of ["seg", "langsw"]) slideOne(kind, animate);
@@ -457,7 +490,7 @@
     });
     if (seen) THUMB[kind] = seen;
   }
-  const topbar = () => `<div class="topbar"><div class="brand">${logoImg("logo")}Green Resilience</div><nav class="tabs" aria-label="Main">${tabs()}${langSwitch()}</nav></div>`;
+  const topbar = () => `<div class="topbar"><div class="brand">${logoImg("logo")}Green Resilience</div><div class="navwrap">${themeBtn()}<nav class="tabs" aria-label="Main">${tabs()}${langSwitch()}</nav></div></div>`;
   const footer = () => `<div class="foot"><span>${L().footer}</span><span>${L().footData}</span></div>`;
 
   function bestPerZone(z) {   // best crop of a zone on the measured climate, each crop at its own best date
@@ -532,13 +565,42 @@
       </div>${footer()}</div>`;
   }
 
+  // ---------- page change: our logo (tree + rocket) draws itself while the next page is prepared ----------
+  const playTransition = (() => {
+    const ld = $("ld"), rm = matchMedia("(prefers-reduced-motion: reduce)");
+    const leaf = (x, y, a, d) => `<g transform="translate(${x} ${y}) rotate(${a})"><path class="lf" style="--d:${d}s" d="M0 0C3 -5.5 10 -5.5 13.5 0C10 5.5 3 5.5 0 0Z"/></g>`;
+    const half = `<path class="dr" pathLength="1" style="--d:.04s" d="M97 96V138C97 151 88 158 68 158"/>
+<path class="dr" pathLength="1" style="--d:.14s" d="M97 134C97 118 82 114 73 106C65 99 67 91 73 86C78 81 77 74 73 70"/>
+${leaf(73, 70, -125, .34)}${leaf(75, 77, -38, .38)}${leaf(69, 92, -178, .42)}${leaf(67, 104, 158, .46)}${leaf(81, 114, 142, .5)}`;
+    ld.innerHTML = `<svg viewBox="0 0 200 200"><circle class="bd" cx="100" cy="100" r="96"/>
+<path class="dr" pathLength="1" style="--d:.02s" d="M66 158H134"/>
+<g>${half}</g><g transform="translate(200 0) scale(-1 1)">${half}</g>
+<circle class="sr" cx="68" cy="59" r="6"/>
+<path class="sm" d="M139 35A13 13 0 1 0 152 52A10 10 0 1 1 139 35Z"/>
+<path class="fl2" d="M95 96H105L100 120Z"/>
+<path class="rk2" d="M100 38C93 46 88 56 88 70V80C83 84 81 89 81 95L88 94L92 97V92H108V97L112 94L119 95C119 89 117 84 112 80V70C112 56 107 46 100 38Z"/></svg>`;
+    let busy = false;
+    // playTransition(fn): shows the animation, runs fn() while the screen is covered, then fades out (~0.9 s)
+    return onSwap => {
+      if (busy) return; busy = true; const sw = rm.matches ? 120 : 620;
+      ld.className = ""; void ld.offsetWidth; ld.className = "on";
+      setTimeout(() => { try { if (onSwap) onSwap(); } finally { /* always fade out */ } }, sw);
+      setTimeout(() => ld.classList.add("out"), sw + 50);
+      setTimeout(() => { ld.className = ""; busy = false; }, sw + 50 + 230);
+    };
+  })();
+  function goPage(p, before) {   // menu pill slides at once; the page itself changes under the logo animation
+    if (p === S.page && !before) return;
+    $("mapnav").innerHTML = navHTML(p); slideTabs();
+    playTransition(() => { if (before) { before(); render(); } setPage(p); });
+  }
   function setPage(p, keepScroll) {
     S.page = p;
     document.body.classList.remove("page-home", "page-map", "page-sources");
     document.body.classList.add("page-" + p);
     if (p === "home") renderHome();
     if (p === "sources") renderSources();
-    $("mapnav").innerHTML = tabs() + langSwitch();   // one menu, centred, same place on every page
+    $("mapnav").innerHTML = navHTML();   // one menu, centred, same place on every page
     slideTabs();
     if ((p === "home" || p === "sources") && !keepScroll) $(p).scrollTop = 0;
     if (p === "map" && REAL) { MAP.resize(); fitReal(false); }
@@ -753,8 +815,9 @@
     if (!el) { if (S.list) { S.list = false; renderTop(); } return; }
     const act = el.dataset.act;
     if (act === "lang") { setLang(el.dataset.lang || (S.lang === "en" ? "es" : "en")); return; }
-    if (act === "page") { setPage(el.dataset.page); return; }
-    if (act === "open") { S.crop = el.dataset.crop; S.zone = el.dataset.zone; S.mode = "best"; S.view = "crop"; S.info = null; render(); setPage("map"); return; }
+    if (act === "theme") { setTheme(S.theme === "dark" ? "light" : "dark"); return; }
+    if (act === "page") { goPage(el.dataset.page); return; }
+    if (act === "open") { const { crop: c, zone: z } = el.dataset; goPage("map", () => { S.crop = c; S.zone = z; S.mode = "best"; S.view = "crop"; S.info = null; }); return; }
     if (act === "list") { S.list = !S.list; S.lens = false; renderTop(); return; }
     if (act === "crop") { S.crop = el.dataset.crop; S.list = false; S.info = null; S.view = "crop"; }
     else if (act === "zone") { S.zone = el.dataset.zone; S.list = false; }
@@ -824,6 +887,7 @@
   })();
 
   document.querySelector(".home-btn").innerHTML = logoImg("");
+  document.querySelector(".ctl.themebtn").innerHTML = SUN + MOON;
   applyStatic();
   applySheet();
   render();

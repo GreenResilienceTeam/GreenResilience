@@ -5,7 +5,7 @@ window.I18N = {
   en: {
     locale: "en-US", dec: ".",
     tabs: { home: "Home", map: "Map", sources: "Sources" },
-    langLabel: "Language",
+    langLabel: "Language", themeDark: "Switch to dark theme", themeLight: "Switch to light theme",
     crops: {}, zones: {}, zoneShort: { "Coast": "Coast", "Town": "Town", "Inland farmland": "Inland" },
     textures: {},
     mon: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
@@ -177,7 +177,7 @@ window.I18N = {
   es: {
     locale: "es-ES", dec: ",",
     tabs: { home: "Inicio", map: "Mapa", sources: "Fuentes" },
-    langLabel: "Idioma",
+    langLabel: "Idioma", themeDark: "Cambiar a tema oscuro", themeLight: "Cambiar a tema claro",
     crops: { "tomato": "Tomate", "melon": "Melón", "strawberry": "Fresa", "green bean": "Judía verde", "radish": "Rábano",
       "sea asparagus": "Salicornia", "orange": "Naranjo", "olive": "Olivo", "lemon": "Limonero", "blueberry": "Arándano" },
     zones: { "Coast": "Costa", "Town": "Casco urbano", "Inland farmland": "Campo interior" },
