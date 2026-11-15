@@ -256,6 +256,30 @@ body.page-home #home, body.page-sources #sources { display: block; }
 .info .nums li b { color: var(--ink); white-space: nowrap; }
 .info .src { margin-top: 12px; font: 500 11.5px/1.5 Inter, sans-serif; color: #77827a; }
 
+/* ---- season catalogue (right panel / phone sheet) ---- */
+.cat-h { display: flex; align-items: center; gap: 12px; }
+.cat-ic { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 50%; background: var(--chip); display: flex; align-items: center; justify-content: center; font-size: 28px; }
+.cat-sub { margin: 10px 0 4px; font: 400 14px/1.45 Inter, sans-serif; color: var(--muted2); }
+.cat { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.ci { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 10px 8px 8px; border-radius: 18px; background: rgba(255,255,255,.55); text-align: left; transition: background .15s, transform .15s; }
+.ci:hover, .ci:focus-visible { background: #fff; transform: translateY(-1px); outline: none; }
+.ci img, .ci .ph { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 14px; object-fit: cover; background: #ded6c0; }
+.ci .ct { flex: 1; min-width: 0; font: 400 12.5px/1.45 Inter, sans-serif; color: var(--muted2); }
+.ci .ct b { display: block; font: 700 14.5px Inter, sans-serif; color: var(--ink); margin-bottom: 2px; }
+.ci .pct { flex: 0 0 auto; font-size: 13px; padding: 5px 9px; }
+.ci .rk1 { font: 700 12px Inter, sans-serif; color: var(--muted); width: 16px; text-align: center; flex: 0 0 16px; }
+.cat.dim .ci { opacity: .6; }
+.backlink { margin: 0 0 10px; font: 600 13px Inter, sans-serif; color: #14403f; padding: 4px 0; }
+.backlink:hover { text-decoration: underline; }
+.toggle { margin-top: 14px; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 14px; background: var(--chip); font: 600 13px Inter, sans-serif; color: var(--muted2); }
+/* ---- home buttons: gentle lift + glow on hover, press on tap ---- */
+.btn { transition: transform .18s ease, box-shadow .18s ease, filter .18s ease, background .18s ease; }
+.btn.primary:hover { transform: translateY(-2px); filter: brightness(1.06); box-shadow: 0 0 0 4px rgba(149,167,80,.22), 0 8px 22px rgba(98,149,142,.45); }
+.btn.ghost:hover { transform: translateY(-2px); background: #fff; box-shadow: 0 8px 20px rgba(60,70,50,.18); }
+.btn:active { transform: translateY(0) scale(.98); filter: none; }
+.btn:focus-visible { outline: 3px solid rgba(98,149,142,.6); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .btn, .ci { transition: none; } .btn:hover, .ci:hover { transform: none; } }
+
 /* ---- laptops / projectors: narrower panel ---- */
 @media (max-width: 1180px) and (min-width: 861px) {
   #panel { width: 380px; }

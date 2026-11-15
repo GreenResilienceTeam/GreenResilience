@@ -30,7 +30,8 @@
 
   const S = { crop: D.crops.some(c => c.key === "tomato") ? "tomato" : D.crops[0].key, zone: "Inland farmland",
     iT: 0, iR: D.rain.indexOf(100), mode: "best", week: 0, zoom: 1, sheet: "half", list: false, lens: false, year: LAST_YEAR,
-    info: null, expert: false, allCrops: false, page: "home", lang: initialLang() };
+    info: null, expert: false, allCrops: false, page: "home", lang: initialLang(),
+    view: "crop", seasonOther: false };   // view: "crop" card or "season" catalogue
 
   // ---------- small helpers ----------
   const $ = id => document.getElementById(id);
@@ -233,14 +234,14 @@
     // zones: polygons + pin + label, coloured by the match of the selected crop
     let pins = ""; const k = Math.max(1, 0.8 / (S.scale || 1)), fs = (14 * k).toFixed(1);
     Object.entries(ZONE_MAP).forEach(([name, zm]) => {
-      const r = res(S.crop, name, weekFor(S.crop, name)), [col] = level(r.matchPct), on = name === S.zone;
+      const zs = zoneShown(name), r = { matchPct: zs.pct }, [col] = level(zs.pct), on = name === S.zone;
       s += `<g class="zone" data-act="zone" data-zone="${esc(name)}" tabindex="0" role="button" aria-label="${esc(L().zoneAria(zname(name), r.matchPct))}"><g stroke="#ece4d2" stroke-width="3">` +
         zm.polys.map(([d, o]) => `<path class="poly" d="${d}" fill="${col}" opacity="${o}"/>`).join("") + `</g></g>`;
       const [px, py] = zm.pin, [lx, ly] = zm.label;
       pins += `<g class="zone" data-act="zone" data-zone="${esc(name)}">`;
       if (on) pins += `<circle cx="${px}" cy="${py}" r="42" fill="none" stroke="#95a750" stroke-width="3" opacity=".6"/><circle class="pin-ring" cx="${px}" cy="${py}" r="22" fill="#62958e" stroke="#fff" stroke-width="4"/><circle cx="${px}" cy="${py}" r="7" fill="#fff"/>`;
       else pins += `<circle class="pin-ring" cx="${px}" cy="${py}" r="20" fill="#fff" stroke="${col}" stroke-width="3"/><circle cx="${px}" cy="${py}" r="8" fill="${col}"/>`;
-      pins += `<text x="${lx}" y="${ly + (k - 1) * (ly < py ? -14 : 14)}" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="${fs}" fill="#2b3a2f" stroke="#ece4d2" stroke-width="${5 * k}" paint-order="stroke">${esc(innerWidth <= 860 ? zshort(name) : zname(name))} · ${r.matchPct}%</text></g>`;
+      pins += `<text x="${lx}" y="${ly + (k - 1) * (ly < py ? -14 : 14)}" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="${fs}" fill="#2b3a2f" stroke="#ece4d2" stroke-width="${5 * k}" paint-order="stroke">${esc(pinLabel(name, zs))}</text></g>`;
     });
     s += pins;
     s += `<text x="520" y="452" text-anchor="middle" font-family="Fraunces,serif" font-size="${(24 * Math.max(1, 0.7 / (S.scale || 1))).toFixed(1)}" fill="#2b3a2f" stroke="#ece4d2" stroke-width="4" paint-order="stroke" pointer-events="none">San Pedro del Pinatar</text>`;
@@ -300,8 +301,8 @@
 
   function zoneFeatures() {
     return { type: "FeatureCollection", features: Object.entries(ZONE_GEO).map(([name, poly]) => {
-      const r = res(S.crop, name, weekFor(S.crop, name)), [col] = level(r.matchPct);
-      return { type: "Feature", properties: { name, color: col, on: name === S.zone ? 1 : 0, pct: r.matchPct },
+      const zs = zoneShown(name), [col] = level(zs.pct);
+      return { type: "Feature", properties: { name, color: col, on: name === S.zone ? 1 : 0, pct: zs.pct },
         geometry: poly.length > 1 ? { type: "MultiPolygon", coordinates: poly.map(p => [p]) } : { type: "Polygon", coordinates: poly } };
     }) };
   }
@@ -335,11 +336,11 @@
     if (!REAL) return;
     MAP.getSource("zones").setData(zoneFeatures());
     Object.entries(MARKERS).forEach(([name, { el }]) => {
-      const r = res(S.crop, name, weekFor(S.crop, name)), [col] = level(r.matchPct), short = innerWidth <= 860 ? zshort(name) : zname(name);
+      const zs = zoneShown(name), r = { matchPct: zs.pct }, [col] = level(zs.pct);
       el.classList.toggle("on", name === S.zone);
       el.style.setProperty("--c", col);
       el.setAttribute("aria-label", L().zoneAria(zname(name), r.matchPct));
-      el.innerHTML = `<div class="pin"><i></i></div><span>${esc(short)} · ${r.matchPct}%</span>`;
+      el.innerHTML = `<div class="pin"><i></i></div><span>${esc(pinLabel(name, zs))}</span>`;
     });
   }
 
@@ -598,6 +599,48 @@
     return h + `<button class="linkbtn" data-act="allcrops">${S.allCrops ? T_.showFewer : T_.compareAll}</button></div>`;
   }
 
+  // ---------- season catalogue: best crops to plant in a season, in the chosen zone ----------
+  const SEASON_ICON = { Spring: "🌱", Summer: "☀️", Autumn: "🍂", Winter: "❄️" };
+  function seasonCatalog(z, season) {   // every crop at its best week of the season, best first
+    const ms = SEASONS[season];
+    const list = D.crops.map(c => { const w = seasonWeek(c.key, z, season); return { c, r: res(c.key, z, w), ok: c.months.some(m => ms.includes(m)) }; })
+      .sort((a, b) => b.r.match - a.r.match);
+    return { ok: list.filter(x => x.ok), other: list.filter(x => !x.ok) };   // ok = usually planted in that season
+  }
+  function zoneShown(name) {   // what the map shows for a zone: the chosen crop, or the season's best crop
+    if (S.view === "season" && SEASONS[S.mode]) {
+      const top = seasonCatalog(name, S.mode).ok[0];
+      if (top) return { pct: top.r.matchPct, crop: top.c.key };
+    }
+    return { pct: res(S.crop, name, weekFor(S.crop, name)).matchPct, crop: null };
+  }
+  function pinLabel(name, zs) {
+    const small = innerWidth <= 860, z = small ? zshort(name) : zname(name);
+    return zs.crop && !small ? L().pinSeason(z, cname(zs.crop), zs.pct) : `${z} · ${zs.pct}%`;
+  }
+  function renderSeasonPanel() {
+    const T_ = L(), z = S.zone, s = S.mode, sn = T_.seasons[s], cat = seasonCatalog(z, s);
+    const item = ({ c, r }, rank) => {
+      const [col] = level(r.matchPct), water = r.irr >= 1 ? T_.catIrr(m3(r.irr)) : T_.catNoIrr;
+      const line = c.perennial ? T_.catPerennial(water) : T_.catLine(when(r.plant), when(r.harvest), water);
+      return `<button class="ci" data-act="seasoncrop" data-crop="${esc(c.key)}"><span class="rk1">${rank}</span>` +
+        (PH[c.key] ? `<img src="${PH[c.key].src}" alt="">` : `<span class="ph"></span>`) +
+        `<span class="ct"><b>${esc(cname(c.key))}</b>${VERDICT(r.matchPct)} · ${esc(line)}</span>` +
+        `<span class="pct" style="background:${col}">${r.matchPct}%</span></button>`;
+    };
+    let h = `<div class="cat-h"><span class="cat-ic" aria-hidden="true">${SEASON_ICON[s]}</span><div class="title">${esc(sn)} <span>(${esc(zname(z))})</span></div></div>`;
+    h += `<p class="cat-sub">${esc(T_.catSub(sn, T_.seasonMonths[s], zname(z)))}</p>`;
+    if (shifted()) h += `<div class="banner shift">${esc(T_.lensActive(warm(), D.rain[S.iR]))}</div>`;
+    h += cat.ok.length ? `<div class="cat">${cat.ok.map((x, i) => item(x, i + 1)).join("")}</div>` : `<p class="mini">${T_.catNone}</p>`;
+    if (cat.other.length) {
+      h += `<button class="toggle" data-act="seasonother" aria-expanded="${S.seasonOther}">${esc(T_.catOther(sn, cat.other.length))} <span>${S.seasonOther ? "▴" : "▾"}</span></button>`;
+      if (S.seasonOther) h += `<div class="cat dim">${cat.other.map(x => item(x, "·")).join("")}</div>`;
+    }
+    h += `<p class="note">${T_.catNote(D.years[0], LAST_YEAR)}</p>`;
+    $("panelBody").innerHTML = h;
+    $("info").hidden = true;
+  }
+
   // ---------- "?" cards: how each answer is calculated, with this crop's own numbers ----------
   function infoCard(kind) {
     const T_ = L(), I = T_.li, c = S.crop, z = S.zone, p = crop(c), w = weekFor(c, z), r = res(c, z, w), zz = zone(z), st = zz.stations.join(" + ");
@@ -642,8 +685,10 @@
 
   // ---------- result panel ----------
   function renderPanel() {
+    if (S.view === "season" && SEASONS[S.mode]) { renderSeasonPanel(); return; }
     const T_ = L(), c = S.crop, z = S.zone, p = crop(c), w = weekFor(c, z), r = res(c, z, w), [col] = level(r.matchPct), a = D.years[0];
-    let h = `<div class="hdr"><button data-act="info" data-info="match" aria-label="${T_.qAria}" style="padding:0">${ring(64, r.match, col, r.matchPct + "%", 56, 22, 6, 14)}</button>` +
+    let h = (SEASONS[S.mode] ? `<button class="backlink" data-act="seasonlist">${esc(T_.backTo(T_.seasons[S.mode]))}</button>` : "") +
+      `<div class="hdr"><button data-act="info" data-info="match" aria-label="${T_.qAria}" style="padding:0">${ring(64, r.match, col, r.matchPct + "%", 56, 22, 6, 14)}</button>` +
       `<div><div class="title">${esc(cname(c))} <span>(${esc(zname(z))})</span></div><span class="verdict" style="background:${col}">${VERDICT(r.matchPct)}</span></div></div>`;
     if (PH[c]) h += `<figure class="photo"><img src="${PH[c].src}" alt="${esc(cname(c))}"><figcaption>${esc(PH[c].credit.replace(/^Photo/, T_.photoWord))}</figcaption></figure>`;
     h += `<p class="desc">${esc(explain(p, r))}</p>`;
@@ -686,11 +731,14 @@
     const act = el.dataset.act;
     if (act === "lang") { setLang(el.dataset.lang || (S.lang === "en" ? "es" : "en")); return; }
     if (act === "page") { setPage(el.dataset.page); return; }
-    if (act === "open") { S.crop = el.dataset.crop; S.zone = el.dataset.zone; S.mode = "best"; S.info = null; render(); setPage("map"); return; }
+    if (act === "open") { S.crop = el.dataset.crop; S.zone = el.dataset.zone; S.mode = "best"; S.view = "crop"; S.info = null; render(); setPage("map"); return; }
     if (act === "list") { S.list = !S.list; S.lens = false; renderTop(); return; }
-    if (act === "crop") { S.crop = el.dataset.crop; S.list = false; S.info = null; }
+    if (act === "crop") { S.crop = el.dataset.crop; S.list = false; S.info = null; S.view = "crop"; }
     else if (act === "zone") { S.zone = el.dataset.zone; S.list = false; }
-    else if (act === "mode") { S.mode = el.dataset.mode; }
+    else if (act === "mode") { S.mode = el.dataset.mode; S.view = S.mode === "best" ? "crop" : "season"; S.info = null; S.seasonOther = false; }
+    else if (act === "seasoncrop") { S.crop = el.dataset.crop; S.view = "crop"; S.info = null; }
+    else if (act === "seasonlist") { S.view = "season"; S.info = null; }
+    else if (act === "seasonother") { S.seasonOther = !S.seasonOther; }
     else if (act === "week") { S.mode = "week"; S.week = +el.dataset.w; }
     else if (act === "year") { S.year = +el.dataset.year; }
     else if (act === "month") { const m = +el.dataset.month; S.mode = "week"; S.week = monthWeek(S.crop, S.zone, m); }
@@ -705,7 +753,8 @@
     else if (act === "reset") { S.iT = 0; S.iR = D.rain.indexOf(100); }
     const scroll = $("panelBody").scrollTop;
     render();
-    if (["year", "week", "month", "info", "closeinfo", "expert", "allcrops"].includes(act)) $("panelBody").scrollTop = scroll;   // keep the reader's place
+    if (["year", "week", "month", "info", "closeinfo", "expert", "allcrops", "seasonother"].includes(act)) $("panelBody").scrollTop = scroll;   // keep the reader's place
+    if (["mode", "seasoncrop", "seasonlist"].includes(act)) $("panelBody").scrollTop = 0;                 // a new view starts at the top
   });
   document.addEventListener("keydown", e => {
     if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("zone")) { e.preventDefault(); e.target.dispatchEvent(new MouseEvent("click", { bubbles: true })); }
@@ -756,5 +805,5 @@
   render();
   setPage("home");
   initRealMap();
-  window.__cropMatch = { res, explain, crop, D, S, map: () => MAP, setLang, render, infoCard, renderHome, renderSources };   // used by the checks
+  window.__cropMatch = { res, explain, crop, D, S, map: () => MAP, setLang, render, infoCard, renderHome, renderSources, seasonCatalog };   // used by the checks
 })();
