@@ -716,9 +716,23 @@
   addEventListener("resize", () => { applySheet(); render(); if (REAL) { MAP.resize(); fitReal(false); } });
 
   // bottom sheet (phones): drag or tap the handle -> peek / half / full
+  // After a tap on the handle the sheet changes size, and the phone's click from that same tap would
+  // land on whatever is under the finger now (e.g. a "?" button). That one click is ignored.
+  let ignoreClickUntil = 0;
+  document.addEventListener("click", e => {
+    if (Date.now() < ignoreClickUntil) { e.preventDefault(); e.stopPropagation(); ignoreClickUntil = 0; }
+  }, true);
   function applySheet() { $("panel").style.setProperty("--sheet-h", sheetPx() + "px"); }
   (function sheetDrag() {
     const hd = $("handle"), panel = $("panel");
+    // a click listener makes the phone browser treat the handle as a button, so a slightly
+    // inaccurate tap stays on the handle instead of snapping to the "?" button just below it
+    hd.addEventListener("click", e => e.stopPropagation());
+    hd.addEventListener("keydown", e => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault(); const order = ["peek", "half", "full"];
+      S.sheet = order[(order.indexOf(S.sheet) + 1) % 3]; applySheet(); render(); if (REAL) fitReal(true);
+    });
     let y0 = null, h0 = 0, moved = false;
     hd.addEventListener("pointerdown", e => { y0 = e.clientY; h0 = panel.getBoundingClientRect().height; moved = false; panel.classList.add("dragging"); hd.setPointerCapture(e.pointerId); });
     hd.addEventListener("pointermove", e => {
@@ -732,7 +746,7 @@
       const h = panel.getBoundingClientRect().height / innerHeight, order = ["peek", "half", "full"];
       if (!moved) S.sheet = order[(order.indexOf(S.sheet) + 1) % 3];
       else S.sheet = h < 0.41 ? "peek" : h < 0.74 ? "half" : "full";
-      y0 = null; applySheet(); render(); if (REAL) fitReal(true);
+      y0 = null; ignoreClickUntil = Date.now() + 450; applySheet(); render(); if (REAL) fitReal(true);
     });
   })();
 
