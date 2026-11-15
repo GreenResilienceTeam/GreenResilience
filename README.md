@@ -50,6 +50,10 @@ already in `data/`.
 - **Salinity tolerance:** FAO Irrigation and Drainage Paper (threshold + slope, Maas–Hoffman),
   in `data/crops_extra.csv`.
 
+## AI tools
+
+- **Claude Code** (Anthropic): AI coding assistant, used to help write the model and the app code.
+
 ## Limitations
 
 SMAP has a 9 km resolution, so one grid cell covers all zones; it is used for soil moisture

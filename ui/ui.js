@@ -437,7 +437,23 @@
 
   // ---------- pages: Home, Map, Sources ----------
   const PAGES = ["home", "map", "sources"];
-  const tabs = () => PAGES.map(p => `<button class="${S.page === p ? "on" : ""}" data-act="page" data-page="${p}"${S.page === p ? ' aria-current="page"' : ""}>${L().tabs[p]}</button>`).join("");
+  const tabs = () => `<span class="seg"><i class="thumb" aria-hidden="true"></i>` +
+    PAGES.map(p => `<button class="${S.page === p ? "on" : ""}" data-act="page" data-page="${p}"${S.page === p ? ' aria-current="page"' : ""}>${L().tabs[p]}</button>`).join("") + `</span>`;
+  let THUMB = null;   // where the menu slider was last drawn, so a new page slides it from there
+  function slideTabs(animate = true) {
+    let seen = null;
+    document.querySelectorAll(".tabs .seg").forEach(seg => {
+      const on = seg.querySelector("button.on"), th = seg.querySelector(".thumb");
+      if (!on || !on.offsetWidth) return;   // this menu is hidden right now
+      const to = { x: on.offsetLeft, w: on.offsetWidth };
+      th.style.transition = "none";
+      if (animate && THUMB) { th.style.transform = `translateX(${THUMB.x}px)`; th.style.width = THUMB.w + "px"; void th.offsetWidth; th.style.transition = ""; }
+      th.style.transform = `translateX(${to.x}px)`; th.style.width = to.w + "px";
+      if (!animate || !THUMB) requestAnimationFrame(() => { th.style.transition = ""; });
+      seen = to;
+    });
+    if (seen) THUMB = seen;
+  }
   const topbar = () => `<div class="topbar"><div class="brand">${logoImg("logo")}Green Resilience</div><nav class="tabs" aria-label="Main">${tabs()}${langSwitch()}</nav></div>`;
   const footer = () => `<div class="foot"><span>${L().footer}</span><span>${L().footData}</span></div>`;
 
@@ -507,6 +523,9 @@
           ${ref("Sentinel-2 cloudless 2023 by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2023), CC BY-NC-SA 4.0.", "https://s2maps.eu", "")}
         </ol></div>
         <div class="card"><h3>${R.photos}</h3><p class="sub" style="margin:0 0 8px">${R.photosNote}</p><ol>${photos}</ol></div>
+        <div class="card"><h3>${R.ai}</h3><ol>
+          ${ref("Claude Code (Anthropic).", "https://claude.com/claude-code", R.aiNote)}
+        </ol></div>
       </div>${footer()}</div>`;
   }
 
@@ -517,6 +536,7 @@
     if (p === "home") renderHome();
     if (p === "sources") renderSources();
     $("mapnav").innerHTML = tabs() + langSwitch();   // one menu, centred, same place on every page
+    slideTabs();
     if ((p === "home" || p === "sources") && !keepScroll) $(p).scrollTop = 0;
     if (p === "map" && REAL) { MAP.resize(); fitReal(false); }
   }
@@ -762,7 +782,8 @@
   });
   $("sT").addEventListener("input", e => { S.iT = +e.target.value; render(); });
   $("sR").addEventListener("input", e => { S.iR = +e.target.value; render(); });
-  addEventListener("resize", () => { applySheet(); render(); if (REAL) { MAP.resize(); fitReal(false); } });
+  addEventListener("resize", () => { applySheet(); render(); slideTabs(false); if (REAL) { MAP.resize(); fitReal(false); } });
+  if (document.fonts) document.fonts.ready.then(() => slideTabs(false));   // web fonts change the button widths
 
   // bottom sheet (phones): drag or tap the handle -> peek / half / full
   // After a tap on the handle the sheet changes size, and the phone's click from that same tap would
