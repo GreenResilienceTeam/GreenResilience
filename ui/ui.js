@@ -21,11 +21,10 @@
 
   // ---------- language: English or Spanish (texts in ui/i18n.js) ----------
   const LANGS = ["en", "es"];
-  function initialTheme() {   // the visitor's last choice, else the system setting
+  function initialTheme() {   // the visitor's last choice, else light
     let saved = null;
     try { saved = localStorage.getItem("gr-theme"); } catch (e) { /* storage blocked */ }
-    if (saved === "dark" || saved === "light") return saved;
-    return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    return saved === "dark" ? "dark" : "light";
   }
   function initialLang() {   // the visitor's last choice, else the browser language
     let saved = null;
@@ -461,14 +460,26 @@
   const themeLabel = () => S.theme === "dark" ? L().themeLight : L().themeDark;
   const themeBtn = () => `<button class="themebtn" data-act="theme" aria-label="${themeLabel()}" aria-pressed="${S.theme === "dark"}">${SUN}${MOON}</button>`;
   const navHTML = (p = S.page) => themeBtn() + tabs(p) + langSwitch();
-  function setTheme(t) {
+  function applyTheme(t) {   // switch every colour at once, the map included
     S.theme = t;
     try { localStorage.setItem("gr-theme", t); } catch (e) { /* storage blocked: the choice lasts for this visit */ }
-    const root = document.documentElement;
-    root.classList.add("theming"); root.dataset.theme = t;   // colours fade over for a moment
-    setTimeout(() => root.classList.remove("theming"), 450);
+    document.documentElement.dataset.theme = t;
     document.querySelectorAll(".themebtn").forEach(b => { b.setAttribute("aria-label", themeLabel()); b.setAttribute("aria-pressed", t === "dark"); });
-    if (REAL) { restyle(); try { MAP.setPaintProperty("zones-line", "line-color", zoneLineColor()); } catch (e) { /* zones not added yet */ } }
+    if (REAL) {
+      restyle();
+      try { MAP.setPaintProperty("zones-line", "line-color", zoneLineColor()); } catch (e) { /* zones not added yet */ }
+      try { MAP.redraw(); } catch (e) { /* the map draws on its next frame */ }
+    }
+  }
+  function setTheme(t, btn) {   // the new theme opens as a circle from the button over the whole screen
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!document.startViewTransition || still || !btn) { applyTheme(t); return; }
+    const r = btn.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const end = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    const vt = document.startViewTransition(() => applyTheme(t));
+    vt.ready.then(() => document.documentElement.animate(
+      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${end}px at ${x}px ${y}px)`] },
+      { duration: 600, easing: "cubic-bezier(.4, 0, .2, 1)", pseudoElement: "::view-transition-new(root)" })).catch(() => { /* skipped */ });
   }
   const tabs = (cur = S.page) => `<span class="seg"><i class="thumb" aria-hidden="true"></i>` +
     PAGES.map(p => `<button class="${cur === p ? "on" : ""}" data-act="page" data-page="${p}"${cur === p ? ' aria-current="page"' : ""}>${L().tabs[p]}</button>`).join("") + `</span>`;
@@ -815,7 +826,7 @@ ${leaf(73, 70, -125, .34)}${leaf(75, 77, -38, .38)}${leaf(69, 92, -178, .42)}${l
     if (!el) { if (S.list) { S.list = false; renderTop(); } return; }
     const act = el.dataset.act;
     if (act === "lang") { setLang(el.dataset.lang || (S.lang === "en" ? "es" : "en")); return; }
-    if (act === "theme") { setTheme(S.theme === "dark" ? "light" : "dark"); return; }
+    if (act === "theme") { setTheme(S.theme === "dark" ? "light" : "dark", el); return; }
     if (act === "page") { goPage(el.dataset.page); return; }
     if (act === "open") { const { crop: c, zone: z } = el.dataset; goPage("map", () => { S.crop = c; S.zone = z; S.mode = "best"; S.view = "crop"; S.info = null; }); return; }
     if (act === "list") { S.list = !S.list; S.lens = false; renderTop(); return; }

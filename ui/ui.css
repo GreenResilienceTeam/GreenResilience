@@ -343,7 +343,8 @@ html[data-theme=dark] .themebtn .moon { opacity: 0; transform: rotate(90deg) sca
 @media (max-width: 860px) { .ctl.themebtn { width: 40px; height: 40px; } }
 @media (min-width: 1360px) { .ctl.themebtn { display: none; } }
 #mapnav { z-index: 100; }   /* the menu stays visible above the page-change animation */
-html.theming, html.theming * { transition: background-color .4s ease, color .4s ease, border-color .4s ease, fill .4s ease, stroke .4s ease !important; }
+/* theme change: the browser swaps two snapshots, the new one grows as a circle from the button (ui.js) */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 
 /* ---- page change animation: our logo (tree + rocket) draws itself ---- */
 :root { --ld-pp: #c9c8b8; }
